@@ -7,6 +7,7 @@ AM_INIT_AUTOMAKE
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
+AC_PROG_RANLIB
 
 # Use the C language and compiler for the following checks
 AC_LANG([C])
@@ -23,5 +24,6 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 
 AC_CONFIG_FILES([Makefile
+                 src/lib/Makefile
                  src/bin/Makefile])
 AC_OUTPUT
