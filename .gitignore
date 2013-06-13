@@ -1,9 +1,9 @@
 /autom4te.cache/
+/config/
 /config.status
 /config.log
 /config.h
 /aclocal.m4
-/config/
 /config.h.in
 /compile
 /configure
