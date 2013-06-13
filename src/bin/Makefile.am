@@ -1,4 +1,4 @@
-AM_CFLAGS = -I$(top_srcdir)/src/bin -I$(top_srcdir)/src/lib
+AM_CFLAGS =-I$(top_srcdir)/src/bin -I$(top_srcdir)/src/lib -Wall
 
 bin_PROGRAMS = dfym
 dfym_SOURCES = main.c

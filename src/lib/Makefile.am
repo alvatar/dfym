@@ -1,4 +1,4 @@
-AM_CFLAGS = -I$(top_srcdir)/src/lib
+AM_CFLAGS =-I$(top_srcdir)/src/lib -Wall
 
 # The libraries to build
 lib_LIBRARIES = libdfym-base.a

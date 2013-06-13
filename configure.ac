@@ -7,6 +7,7 @@ AM_INIT_AUTOMAKE
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
+AC_PROG_CC_C99 
 AC_PROG_RANLIB
 
 # Use the C language and compiler for the following checks
