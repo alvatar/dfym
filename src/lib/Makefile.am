@@ -1,4 +1,9 @@
-AM_CFLAGS =-I$(top_srcdir)/src/lib -Wall
+if DEBUG
+  AM_CFLAGS =-I$(top_srcdir)/src/lib -Wall -g -O3
+else
+  AM_CFLAGS =-I$(top_srcdir)/src/lib -Wall
+endif
+
 
 # The libraries to build
 lib_LIBRARIES = libdfym-base.a
@@ -12,5 +17,5 @@ libdfym_base_a_HEADERS = \
 
 # The files to add to the library and to the source distribution
 libdfym_base_a_SOURCES = \
-										     $(libmylib_a_HEADERS) \
+										     $(libdfym_base_a_HEADERS) \
 										     dfym_base.c

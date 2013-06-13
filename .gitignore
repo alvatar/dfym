@@ -32,3 +32,4 @@ coverage_report
 *.gcno
 *.gcda
 
+src/bin/dfym
