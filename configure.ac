@@ -10,8 +10,6 @@ AC_LANG([C])
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdio.h])
 
-AC_TYPE_SIZE_T
-
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/bin/Makefile])
 
