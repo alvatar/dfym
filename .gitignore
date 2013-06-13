@@ -11,6 +11,7 @@
 /install-sh
 /missing
 /stamp-h1
+configure.scan
 Makefile
 Makefile.in
 m4
@@ -19,6 +20,7 @@ app.info
 coverage_report
 *~
 *.html
+*.log
 *.o
 *.la
 *.so*
