@@ -1,17 +1,14 @@
 AC_INIT([dfym],[0.1],[a@fourthbit.com])
+AM_INIT_AUTOMAKE([1.13])
 
 AC_CONFIG_SRCDIR([src/bin])
 
 AC_PROG_CPP
 AC_PROG_CC
-
-AM_INIT_AUTOMAKE([1.9])
-
 AC_LANG([C])
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS([string])
-AC_CHECK_HEADERS([iostream])
+AC_CHECK_HEADERS([stdio.h])
 
 AC_TYPE_SIZE_T
 
