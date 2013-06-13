@@ -1,5 +1,5 @@
 #include "dfym_base.h"
 
-int dfym_function() {
-  return 0;
+int dfym_fun() {
+  return 99;
 }

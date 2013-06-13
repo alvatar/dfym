@@ -3,6 +3,6 @@
 
 int main() {
   printf("Welcome to DFYM\n");
-  return dfyn_fun();
+  return dfym_fun();
 }
 
