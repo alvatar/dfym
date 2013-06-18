@@ -3,8 +3,6 @@ AC_INIT([dfym], [0.1], [a@fourthbit.com])
 AC_CONFIG_SRCDIR([src/bin/main.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE
-LT_INIT
-AC_CONFIG_MACRO_DIR([m4])
 PKG_PROG_PKG_CONFIG
 
 # Remember externally set CFLAGS
@@ -13,6 +11,7 @@ EXTERNAL_CFLAGS="$CFLAGS"
 # Checks for programs. These may set default variables, such as CFLAGS
 AC_PROG_CPP
 AC_PROG_CC_C99
+AC_PROG_RANLIB
 
 # Reset the externally set CFLAGS after calling AC_PROG*
 CFLAGS="$EXTERNAL_CFLAGS"
