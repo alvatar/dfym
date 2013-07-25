@@ -45,6 +45,10 @@ int main(int argc, char **argv)
     {
       printf("GET UNTAGGED CONTENTS OF A DIRECTORY\n");
     }
+  else if (!strcmp("rename", argv[1]))
+    {
+      printf("RENAME FILE OR DIRECTORY\n");
+    }
   else
     {
       printf("Please provide a command\n");
