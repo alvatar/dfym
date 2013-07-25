@@ -127,6 +127,8 @@ int main(int argc, char **argv)
     }
   else
     {
+      int bytes;
+      bytes = sqlite3_column_bytes(stmt, 0);
       const unsigned char *text = sqlite3_column_text(stmt, 0);
       printf("table name: %s\n", text);
     }
@@ -134,7 +136,7 @@ int main(int argc, char **argv)
   //CALL_SQLITE_EXPECT (step (stmt), DONE);
 
 
-  free(db_path);
+  g_free(db_path);
   return 0;
 }
 
