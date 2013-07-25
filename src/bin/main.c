@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   /* Commands */
   if (!strcmp("tag", argv[1]))
     {
-      printf("TAG\n");
+      printf("ADD TAG\n");
     }
   else if (!strcmp("search", argv[1]))
     {
@@ -35,11 +35,11 @@ int main(int argc, char **argv)
     }
   else if (!strcmp("show", argv[1]))
     {
-      printf("SHOW TAGS\n");
+      printf("SHOW TAGS ASSIGNED TO A FILE OR DIRECTORY\n");
     }
   else if (!strcmp("discover", argv[1]))
     {
-      printf("GET A RANDOM UNTAGGED DIRECTORY OR FILE\n");
+      printf("GET UNTAGGED CONTENTS OF A DIRECTORY\n");
     }
   else
     {
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
           if (optopt == 'n')
             fprintf (stderr, "Option -n requires an argument.\n");
           else if (isprint (optopt))
-            fprintf (stderr, "Unknown option `-%i'.\n", optopt);
+            fprintf (stderr, "Unknown option `-%c'.\n", optopt);
           else
             fprintf (stderr,
                      "Unknown option character `\\x%x'.\n",
