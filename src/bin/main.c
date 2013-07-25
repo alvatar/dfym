@@ -95,18 +95,40 @@ int main(int argc, char **argv)
          filter_files_flag,
          filter_directories_flag);
 
-  // Home dir
+  /* Home dir */
   struct passwd *pw = getpwuid(getuid());
   char *homedir = pw->pw_dir;
 
-  // Database
+  /* Database */
   sqlite3 *db;
-  //char *sql;
-  //sqlite3_stmt *stmt;
+  char *sql;
+  sqlite3_stmt *stmt;
+  char *exec_error_msg = NULL;
 
   gchar *db_path = g_strconcat(homedir, "/.dfym.db", NULL);
-  //printf("%s\n", db_path);
   CALL_SQLITE(open(db_path, &db));
+
+  /* Create tables if not found */
+  sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?";
+  CALL_SQLITE( prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL) );
+  CALL_SQLITE (bind_text (stmt, 1, "tags", strlen("tags"), SQLITE_STATIC));
+  if (!(sqlite3_step(stmt)==SQLITE_ROW))
+    {
+      /* No tags table found: create */
+      /* Table: tags
+       * name: text
+       * */
+      sql = "create table tags(name text);";
+      CALL_SQLITE_EXPECT( exec(db, sql, NULL, 0, &exec_error_msg), OK);
+    }
+  else
+    {
+      const unsigned char *text = sqlite3_column_text(stmt, 0);
+      printf("table name: %s\n", text);
+    }
+
+  //CALL_SQLITE_EXPECT (step (stmt), DONE);
+
 
   free(db_path);
   return 0;
