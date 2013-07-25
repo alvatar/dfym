@@ -3,7 +3,11 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-
+#include <unistd.h>
+#include <pwd.h>
+// SQLite
+#include <sqlite3.h>
+// Glib
 #include <glib.h>
 #include <glib/gstdio.h>
 
@@ -91,6 +95,20 @@ int main(int argc, char **argv)
          filter_files_flag,
          filter_directories_flag);
 
-  return dfym_fun();
+  // Home dir
+  struct passwd *pw = getpwuid(getuid());
+  char *homedir = pw->pw_dir;
+
+  // Database
+  sqlite3 *db;
+  //char *sql;
+  //sqlite3_stmt *stmt;
+
+  gchar *db_path = g_strconcat(homedir, "/.dfym.db", NULL);
+  //printf("%s\n", db_path);
+  CALL_SQLITE(open(db_path, &db));
+
+  free(db_path);
+  return 0;
 }
 
