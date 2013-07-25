@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
 
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -22,7 +24,7 @@ int main(int argc, char **argv)
     }
     */
 
-  /* String compare */
+  /* Commands */
   if (!strcmp("tag", argv[1]))
     {
       printf("TAG\n");
@@ -35,6 +37,10 @@ int main(int argc, char **argv)
     {
       printf("SHOW TAGS\n");
     }
+  else if (!strcmp("discover", argv[1]))
+    {
+      printf("GET A RANDOM UNTAGGED DIRECTORY OR FILE\n");
+    }
   else
     {
       printf("Please provide a command\n");
@@ -43,21 +49,47 @@ int main(int argc, char **argv)
   /* Argument parsing */
 
   int opt;
-  int aflag = 0;
+  int random_flag = 0;
+  char *number_value = NULL;
+  int filter_files_flag = 0;
+  int filter_directories_flag = 0;
 
-  while ( (opt = getopt(argc, argv, "abc:")) != -1)
+  while ( (opt = getopt(argc, argv, "rn:fd")) != -1)
     {
       switch (opt)
         {
-        case 'a':
-          aflag = 1;
+        case 'r':
+          random_flag = 1;
+          break;
+        case 'n':
+          number_value = optarg;
+          break;
+        case 'f':
+          filter_files_flag = 1;
+          break;
+        case 'd':
+          filter_directories_flag = 1;
+          break;
+        case '?':
+          if (optopt == 'n')
+            fprintf (stderr, "Option -n requires an argument.\n");
+          else if (isprint (optopt))
+            fprintf (stderr, "Unknown option `-%i'.\n", optopt);
+          else
+            fprintf (stderr,
+                     "Unknown option character `\\x%x'.\n",
+                     optopt);
           break;
         default:
-          break;
+          abort();
         }
     }
 
-  printf("Flags: a=%i\n", aflag);
+  printf("Flags: r=%i, n=%s, f=%i, d=%i\n",
+         random_flag,
+         number_value,
+         filter_files_flag,
+         filter_directories_flag);
 
   return dfym_fun();
 }
