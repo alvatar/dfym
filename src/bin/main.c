@@ -13,6 +13,39 @@
 
 #include "dfym_base.h"
 
+sqlite3* open_or_create_database(char *db_path)
+{
+  sqlite3 *db = NULL;
+  char *exec_error_msg = NULL;
+  char *sql = NULL;
+  sqlite3_stmt *stmt = NULL;
+
+  CALL_SQLITE(open(db_path, &db));
+
+  CALL_SQLITE_EXPECT( exec(db,
+                           "create table if not exists tags("
+                           "id       integer primary key,"
+                           "name     text               not null"
+                           ")",
+                           NULL, 0, &exec_error_msg), OK);
+  CALL_SQLITE_EXPECT( exec(db,
+                           "create table if not exists files("
+                           "id       integer primary key,"
+                           "name     text               not null"
+                           ")",
+                           NULL, 0, &exec_error_msg), OK);
+  CALL_SQLITE_EXPECT( exec(db,
+                           "create table if not exists taggings("
+                           "id          integer primary key,"
+                           "tag_id      integer not null,"
+                           "file_id     integer not null,"
+                           "FOREIGN KEY(tag_id) REFERENCES tags(id),"
+                           "FOREIGN KEY(file_id) REFERENCES files(id)"
+                           ")",
+                           NULL, 0, &exec_error_msg), OK);
+  return db;
+}
+
 int main(int argc, char **argv)
 {
   /* Read directory files */
@@ -139,71 +172,31 @@ int main(int argc, char **argv)
          filter_files_flag,
          filter_directories_flag);
 
-  /* Home dir */
+  /* Database */
   struct passwd *pw = getpwuid(getuid());
   char *homedir = pw->pw_dir;
-
-  /* Database */
-  sqlite3 *db;
-  /* char *sql; */
-  sqlite3_stmt *stmt = NULL;
-
   gchar *db_path = g_strconcat(homedir, "/.dfym.db", NULL);
-  CALL_SQLITE(open(db_path, &db));
 
-  sql_if_row(db, &stmt, "select name from sqlite_master where type='table' and name='tags'",
-             NULL,
-             "create table tags("
-             "id       int primary key    not null,"
-             "name     text               not null"
-             ")"
-             );
-  sql_if_row(db, &stmt, "select name from sqlite_master where type='table' and name='files'",
-             NULL,
-             "create table files("
-             "id       int primary key    not null,"
-             "name     text               not null"
-             ")"
-             );
-  sql_if_row(db, &stmt, "select name from sqlite_master where type='table' and name='taggings'",
-             NULL,
-             "create table taggings("
-             "id       int primary key    not null,"
-             "tag      int                not null,"
-             "file     int                not null"
-             ")"
-             );
+  sqlite3 *db = open_or_create_database(db_path);
+
+  char *exec_error_msg = NULL;
+  char *sql = NULL;
+  sqlite3_stmt *stmt = NULL;
+  sql = "INSERT INTO files ( name ) VALUES ( ? )";
+
+  CALL_SQLITE( prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL) );
+  CALL_SQLITE (bind_text (stmt,
+                          1,
+                          "Dvorak",
+                          strlen ("Dvorak"),
+                          0
+                         ));
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
+  sqlite3_int64 last_file_id = sqlite3_last_insert_rowid(db);
+  printf("LAST ID: %i\n", last_file_id);
+
 
   g_free(db_path);
   return 0;
 }
 
-/*
-dfym_create_table_if_not_found(sqlite3 *db, char *table_name)
-{
-  static char *sql = NULL;
-  sqlite3_stmt *stmt = NULL;
-  char *exec_error_msg = NULL;
-
-  if (!sql)
-    {
-      sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?";
-      CALL_SQLITE( prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL) );
-    }
-
-  CALL_SQLITE (bind_text (stmt, 1, table_name, strlen(table_name), SQLITE_STATIC));
-  if (!(sqlite3_step(stmt)==SQLITE_ROW))
-    {
-      // XXX: tags should be table_name
-      sql = "create table tags(name text);";
-      CALL_SQLITE_EXPECT( exec(db, sql, NULL, 0, &exec_error_msg), OK);
-    }
-  else
-    {
-      int bytes;
-      bytes = sqlite3_column_bytes(stmt, 0);
-      const unsigned char *text = sqlite3_column_text(stmt, 0);
-      printf("table name: %s\n", text);
-    }
-}
-*/
