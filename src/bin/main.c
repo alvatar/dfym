@@ -28,18 +28,28 @@ int main(int argc, char **argv)
     }
     */
 
+  if (argc < 2)
+    {
+      fprintf (stderr, "Needs a command argument. Please refer to help using: \"dfym help\"\n");
+      exit(1);
+    }
+
   /* Commands */
   if (!strcmp("tag", argv[1]))
     {
       printf("ADD TAG\n");
     }
-  else if (!strcmp("search", argv[1]))
+  else if (!strcmp("untag", argv[1]))
     {
-      printf("SEARCH WITH TAGS\n");
+      printf("REMOVE A TAG FROM A FILE OR DIRECTORY\n");
     }
   else if (!strcmp("show", argv[1]))
     {
       printf("SHOW TAGS ASSIGNED TO A FILE OR DIRECTORY\n");
+    }
+  else if (!strcmp("search", argv[1]))
+    {
+      printf("SEARCH WITH TAGS\n");
     }
   else if (!strcmp("discover", argv[1]))
     {
@@ -48,6 +58,30 @@ int main(int argc, char **argv)
   else if (!strcmp("rename", argv[1]))
     {
       printf("RENAME FILE OR DIRECTORY\n");
+    }
+  else if (!strcmp("rename", argv[1]))
+    {
+      printf("RENAME FILE OR DIRECTORY\n");
+    }
+  else if (!strcmp("help", argv[1]))
+    {
+      printf("Usage: dfym [command] [flags] [arguments...]\n"
+             "\n"
+             "Commands:\n"
+             "tag         -- add tag to file or directory\n"
+             "untag       -- remove tag from file or directory\n"
+             "show        -- show the tags of a file directory\n"
+             "search      -- search for files or directories that match this tag\n"
+             "discover    -- list files or directories in a directory that are haven't been tagged\n"
+             "rename      -- rename files or directories\n"
+             "rename-tag  -- rename a tag\n"
+             "\n"
+             "Flags:\n"
+             "-f          -- show only files\n"
+             "-d          -- show only directories\n"
+             "-nX         -- show only the first X occurences of the query\n"
+             "-r          -- randomize order of query\n"
+            );
     }
   else
     {
@@ -62,7 +96,13 @@ int main(int argc, char **argv)
   int filter_files_flag = 0;
   int filter_directories_flag = 0;
 
-  while ( (opt = getopt(argc, argv, "rn:fd")) != -1)
+  /* Arguments:
+   * r
+   * n has a required argument
+   * f
+   * d
+   * */
+  while ((opt = getopt(argc, argv, "rn:fd")) != -1)
     {
       switch (opt)
         {
@@ -105,23 +145,56 @@ int main(int argc, char **argv)
 
   /* Database */
   sqlite3 *db;
-  char *sql;
-  sqlite3_stmt *stmt;
-  char *exec_error_msg = NULL;
+  /* char *sql; */
+  sqlite3_stmt *stmt = NULL;
 
   gchar *db_path = g_strconcat(homedir, "/.dfym.db", NULL);
   CALL_SQLITE(open(db_path, &db));
 
-  /* Create tables if not found */
-  sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?";
-  CALL_SQLITE( prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL) );
-  CALL_SQLITE (bind_text (stmt, 1, "tags", strlen("tags"), SQLITE_STATIC));
+  sql_if_row(db, &stmt, "select name from sqlite_master where type='table' and name='tags'",
+             NULL,
+             "create table tags("
+             "id       int primary key    not null,"
+             "name     text               not null"
+             ")"
+             );
+  sql_if_row(db, &stmt, "select name from sqlite_master where type='table' and name='files'",
+             NULL,
+             "create table files("
+             "id       int primary key    not null,"
+             "name     text               not null"
+             ")"
+             );
+  sql_if_row(db, &stmt, "select name from sqlite_master where type='table' and name='taggings'",
+             NULL,
+             "create table taggings("
+             "id       int primary key    not null,"
+             "tag      int                not null,"
+             "file     int                not null"
+             ")"
+             );
+
+  g_free(db_path);
+  return 0;
+}
+
+/*
+dfym_create_table_if_not_found(sqlite3 *db, char *table_name)
+{
+  static char *sql = NULL;
+  sqlite3_stmt *stmt = NULL;
+  char *exec_error_msg = NULL;
+
+  if (!sql)
+    {
+      sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?";
+      CALL_SQLITE( prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL) );
+    }
+
+  CALL_SQLITE (bind_text (stmt, 1, table_name, strlen(table_name), SQLITE_STATIC));
   if (!(sqlite3_step(stmt)==SQLITE_ROW))
     {
-      /* No tags table found: create */
-      /* Table: tags
-       * name: text
-       * */
+      // XXX: tags should be table_name
       sql = "create table tags(name text);";
       CALL_SQLITE_EXPECT( exec(db, sql, NULL, 0, &exec_error_msg), OK);
     }
@@ -132,11 +205,5 @@ int main(int argc, char **argv)
       const unsigned char *text = sqlite3_column_text(stmt, 0);
       printf("table name: %s\n", text);
     }
-
-  //CALL_SQLITE_EXPECT (step (stmt), DONE);
-
-
-  g_free(db_path);
-  return 0;
 }
-
+*/

@@ -1,4 +1,3 @@
-int dfym_fun();
 
 #define CALL_SQLITE(f)                                          \
     {                                                           \
@@ -22,3 +21,4 @@ int dfym_fun();
         }                                                       \
     }                                                           \
 
+int sql_if_row(sqlite3*, sqlite3_stmt**, char*, char*, char*);
