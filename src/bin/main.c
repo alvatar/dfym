@@ -14,7 +14,16 @@
 
 #include "dfym_base.h"
 
-typedef enum {TAG, UNTAG, SHOW, SEARCH, DISCOVER, RENAME, RENAME_TAG } command_t;
+typedef enum
+{
+  TAG,
+  UNTAG,
+  SHOW,
+  SEARCH,
+  DISCOVER,
+  RENAME,
+  RENAME_TAG
+} command_t;
 
 int main(int argc, char **argv)
 {
@@ -141,7 +150,11 @@ int main(int argc, char **argv)
           if (realpath(argument_path, path))
             {
               printf("PATH: %s\n", path);
-              dfym_add_tag (db, tag, path);
+              if (dfym_add_tag (db, tag, path) != DFYM_OK)
+                {
+                  fprintf (stderr, "Database error\n");
+                  exit(-1);
+                }
             }
           else
             {

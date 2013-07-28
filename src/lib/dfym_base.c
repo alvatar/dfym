@@ -42,9 +42,9 @@ sqlite3 *dfym_open_or_create_database(char *const db_path)
 /*
  * dfym_add_tag
  */
-void dfym_add_tag(sqlite3 *db,
-                  char const *const tag,
-                  char const *const file)
+int dfym_add_tag(sqlite3 *db,
+                 char const *const tag,
+                 char const *const file)
 {
   char *sql = NULL;
   sqlite3_stmt *stmt = NULL;
@@ -85,16 +85,16 @@ void dfym_add_tag(sqlite3 *db,
   printf("FILE ID: %li\n", (long int)file_id);
 
   if (!tag_id || !file_id)
-    {
-      fprintf (stderr, "Database error");
-      abort();
-    }
+    return DFYM_DATABASE_ERROR;
+
   /* Insert tagging relation if doesn't exist */
   sql = "INSERT OR IGNORE INTO taggings ( tag_id, file_id ) VALUES ( ?1, ?2 )";
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_int (stmt, 1, tag_id));
   CALL_SQLITE (bind_int (stmt, 2, file_id));
   CALL_SQLITE_EXPECT (step(stmt), DONE);
+
+  return DFYM_OK;
 }
 
 /*

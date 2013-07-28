@@ -9,7 +9,7 @@
             exit (1);                                           \
         }                                                       \
     }                                                           \
-
+ 
 #define CALL_SQLITE_EXPECT(f,x)                                 \
     {                                                           \
         int i;                                                  \
@@ -20,7 +20,13 @@
             exit (1);                                           \
         }                                                       \
     }                                                           \
+ 
+typedef enum
+{
+  DFYM_OK,
+  DFYM_DATABASE_ERROR
+} dfym_status_t;
 
-sqlite3 *dfym_open_or_create_database(char * const);
-void dfym_add_tag(sqlite3*, char const * const, char const * const);
-int dfym_sql_if_row(sqlite3*, sqlite3_stmt**, char const * const, char const * const, char const * const);
+sqlite3 *dfym_open_or_create_database(char *const);
+int dfym_add_tag(sqlite3 *, char const *const, char const *const);
+int dfym_sql_if_row(sqlite3 *, sqlite3_stmt **, char const *const, char const *const, char const *const);
