@@ -82,7 +82,9 @@ int dfym_add_tag(sqlite3 *db,
         file_id = sqlite3_column_int(stmt,0);
     }
   while (step != SQLITE_DONE);
+#ifdef SQL_VERBOSE
   printf("FILE ID: %li\n", (long int)file_id);
+#endif
 
   if (!tag_id || !file_id)
     return DFYM_DATABASE_ERROR;
@@ -93,6 +95,67 @@ int dfym_add_tag(sqlite3 *db,
   CALL_SQLITE (bind_int (stmt, 1, tag_id));
   CALL_SQLITE (bind_int (stmt, 2, file_id));
   CALL_SQLITE_EXPECT (step(stmt), DONE);
+
+  return DFYM_OK;
+}
+
+/*
+ * dfym_remove_tag
+ */
+int dfym_remove_tag(sqlite3 *db,
+                    char const *const tag,
+                    char const *const file)
+{
+  char *sql = NULL;
+  sqlite3_stmt *stmt = NULL;
+  int step;
+
+  /* Insert tagging relation if doesn't exist */
+  sql = 
+    "DELETE "
+    "FROM taggings "
+    "WHERE file_id IN (SELECT files.id FROM files WHERE files.name = ?1) "
+    "AND tag_id IN (SELECT tags.id FROM tags WHERE tags.name = ?2)";
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
+  CALL_SQLITE (bind_text (stmt, 2, tag, strlen (tag), 0));
+  /* CALL_SQLITE_EXPECT (step(stmt), DONE); */
+  do
+    {
+      step = sqlite3_step(stmt);
+      if (step == SQLITE_ROW)
+        printf("%s\n", sqlite3_column_text(stmt,0));
+    }
+  while (step != SQLITE_DONE);
+
+  return DFYM_OK;
+}
+
+/*
+ * dfym_show_file_tags
+ */
+int dfym_show_file_tags(sqlite3 *db,
+                        char const *const file)
+{
+  char *sql = NULL;
+  sqlite3_stmt *stmt = NULL;
+  int step;
+
+  sql =
+    "SELECT t.name "
+    "FROM files f "
+    "JOIN taggings tgs ON (tgs.file_id = f.id) "
+    "JOIN tags t ON (tgs.tag_id = t.id) "
+    "WHERE f.name = ?";
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
+  do
+    {
+      step = sqlite3_step(stmt);
+      if (step == SQLITE_ROW)
+        printf("%s\n", sqlite3_column_text(stmt,0));
+    }
+  while (step != SQLITE_DONE);
 
   return DFYM_OK;
 }

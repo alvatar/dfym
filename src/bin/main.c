@@ -134,22 +134,28 @@ int main(int argc, char **argv)
 
   /* Locate arguments */
   do
-    optind++;
+    if(optind < argc-1)
+      optind++;
   while (strncmp(argv[optind], "-", 1) == 0);
 
   /* Command logic */
+  db = dfym_open_or_create_database (db_path);
   switch (command)
     {
+    /* tag command */
     case TAG:
-      if (argc-optind == 2)
+      if (!(argc-optind == 2))
         {
-          db = dfym_open_or_create_database (db_path);
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
+      else
+        {
           const char *tag = argv[optind];
           const char *argument_path = argv[optind + 1];
           char path[PATH_MAX];
           if (realpath(argument_path, path))
             {
-              printf("PATH: %s\n", path);
               if (dfym_add_tag (db, tag, path) != DFYM_OK)
                 {
                   fprintf (stderr, "Database error\n");
@@ -170,22 +176,87 @@ int main(int argc, char **argv)
                 }
             }
         }
-      else
+      break;
+    /* untag command */
+    case UNTAG:
+      if (!(argc-optind == 2))
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
           exit(EINVAL);
         }
+      else
+        {
+          const char *tag = argv[optind];
+          const char *argument_path = argv[optind + 1];
+          char path[PATH_MAX];
+          if (realpath(argument_path, path))
+            {
+              printf("PATH: %s\n", path);
+              if (dfym_remove_tag (db, tag, path) != DFYM_OK)
+                {
+                  fprintf (stderr, "Database error\n");
+                  exit(-1);
+                }
+            }
+          else
+            {
+              if (errno == ENOENT)
+                {
+                  fprintf (stderr, "File doesn't exist\n");
+                  exit(ENOENT);
+                }
+              else
+                {
+                  fprintf (stderr, "Unknown error\n");
+                  exit(-1);
+                }
+            }
+        }
       break;
-    case UNTAG:
-      break;
+    /* show command */
     case SHOW:
+      if (!(argc-optind == 1))
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
+      else
+        {
+          const char *argument_path = argv[optind];
+          char path[PATH_MAX];
+          if (realpath(argument_path, path))
+            {
+              if (dfym_show_file_tags (db, path) != DFYM_OK)
+                {
+                  fprintf (stderr, "Database error\n");
+                  exit(-1);
+                }
+            }
+          else
+            {
+              if (errno == ENOENT)
+                {
+                  fprintf (stderr, "File doesn't exist\n");
+                  exit(ENOENT);
+                }
+              else
+                {
+                  fprintf (stderr, "Unknown error\n");
+                  exit(-1);
+                }
+            }
+        }
       break;
+    /* search command */
     case SEARCH:
       break;
+    /* discover command */
     case DISCOVER:
       break;
+    /* rename command */
     case RENAME:
       break;
+    /* rename-tag command */
     case RENAME_TAG:
       break;
     default:
