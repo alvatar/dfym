@@ -16,71 +16,6 @@
 
 typedef enum {TAG, UNTAG, SHOW, SEARCH, DISCOVER, RENAME, RENAME_TAG } command_t;
 
-sqlite3 *dfym_open_or_create_database(char *db_path)
-{
-  sqlite3 *db = NULL;
-  char *exec_error_msg = NULL;
-
-  CALL_SQLITE (open(db_path, &db));
-
-  CALL_SQLITE_EXPECT (exec(db,
-                           "create table if not exists tags("
-                           "id       integer primary key,"
-                           "name     text               not null"
-                           ")",
-                           NULL, 0, &exec_error_msg), OK);
-  CALL_SQLITE_EXPECT (exec(db,
-                           "create table if not exists files("
-                           "id       integer primary key,"
-                           "name     text               not null"
-                           ")",
-                           NULL, 0, &exec_error_msg), OK);
-  CALL_SQLITE_EXPECT (exec(db,
-                           "create table if not exists taggings("
-                           "id          integer primary key,"
-                           "tag_id      integer not null,"
-                           "file_id     integer not null,"
-                           "FOREIGN KEY(tag_id) REFERENCES tags(id),"
-                           "FOREIGN KEY(file_id) REFERENCES files(id)"
-                           ")",
-                           NULL, 0, &exec_error_msg), OK);
-  return db;
-}
-
-// TODO: const
-int dfym_add_tag(sqlite3 *db, char *tag, char *file)
-{
-  char *sql = NULL;
-  /* char *exec_error_msg = NULL; */
-  sqlite3_stmt *stmt = NULL;
-
-  /* Insert tag */
-  sql = "INSERT INTO tags ( name ) VALUES ( ? )";
-
-  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
-  CALL_SQLITE (bind_text (stmt, 1, tag, strlen (tag), 0));
-  CALL_SQLITE_EXPECT (step(stmt), DONE);
-  sqlite3_int64 tag_id = sqlite3_last_insert_rowid(db);
-
-  /* Insert file */
-  sql = "INSERT INTO files ( name ) VALUES ( ? )";
-
-  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
-  CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
-  CALL_SQLITE_EXPECT (step(stmt), DONE);
-  sqlite3_int64 file_id = sqlite3_last_insert_rowid(db);
-
-  /* Insert tagging relation */
-  sql = "INSERT INTO taggings ( tag_id, file_id ) VALUES ( ?1, ?2 )";
-
-  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
-  CALL_SQLITE (bind_int (stmt, 1, tag_id));
-  CALL_SQLITE (bind_int (stmt, 2, file_id));
-  CALL_SQLITE_EXPECT (step(stmt), DONE);
-
-  return 0;
-}
-
 int main(int argc, char **argv)
 {
   /* Commands */
@@ -109,19 +44,19 @@ int main(int argc, char **argv)
       printf("Usage: dfym [command] [flags] [arguments...]\n"
              "\n"
              "Commands:\n"
-             "tag         -- add tag to file or directory\n"
-             "untag       -- remove tag from file or directory\n"
-             "show        -- show the tags of a file directory\n"
-             "search      -- search for files or directories that match this tag\n"
-             "discover    -- list files or directories in a directory that are haven't been tagged\n"
-             "rename      -- rename files or directories\n"
-             "rename-tag  -- rename a tag\n"
+             "tag [tag] [file]      -- add tag to file or directory\n"
+             "untag                 -- remove tag from file or directory\n"
+             "show                  -- show the tags of a file directory\n"
+             "search                -- search for files or directories that match this tag\n"
+             "discover              -- list files or directories in a directory that are haven't been tagged\n"
+             "rename                -- rename files or directories\n"
+             "rename-tag            -- rename a tag\n"
              "\n"
              "Flags:\n"
-             "-f          -- show only files\n"
-             "-d          -- show only directories\n"
-             "-nX         -- show only the first X occurences of the query\n"
-             "-r          -- randomize order of query\n"
+             "-f                    -- show only files\n"
+             "-d                    -- show only directories\n"
+             "-nX                   -- show only the first X occurences of the query\n"
+             "-r                    -- randomize order of query\n"
             );
       exit(0);
     }
@@ -175,19 +110,11 @@ int main(int argc, char **argv)
         }
     }
 
-  /* Read directory files */
-  /*
-  GDir *dir;
-  GError *error;
-  const gchar *filename;
-
-  dir = g_dir_open(argv[1], 0, &error);
-  while ( (filename = g_dir_read_name(dir)) )
-    {
-      printf("%s\n", filename);
-    }
-    */
-
+  printf("Flags: r=%i, n=%s, f=%i, d=%i\n\n",
+         random_flag,
+         number_value,
+         filter_files_flag,
+         filter_directories_flag);
 
   /* Database */
   struct passwd *pw = getpwuid(getuid());
@@ -195,11 +122,6 @@ int main(int argc, char **argv)
   gchar *db_path = g_strconcat(homedir, "/.dfym.db", NULL);
 
   sqlite3 *db = NULL;
-  /*
-  char *sql = NULL;
-  char *exec_error_msg = NULL;
-  sqlite3_stmt *stmt = NULL;
-  */
 
   /* Locate first argument */
   do
@@ -210,8 +132,36 @@ int main(int argc, char **argv)
   switch (command)
     {
     case TAG:
-      db = dfym_open_or_create_database(db_path);
-      dfym_add_tag( db, argv[optind], argv[optind+1] );
+      if (argc-optind == 2)
+        {
+          db = dfym_open_or_create_database (db_path);
+          const char *tag = argv[optind];
+          const char *argument_path = argv[optind + 1];
+          char path[PATH_MAX];
+          if (realpath(argument_path, path))
+            {
+              printf("PATH: %s\n", path);
+              dfym_add_tag (db, tag, path);
+            }
+          else
+            {
+              if (errno == ENOENT)
+                {
+                  fprintf (stderr, "File doesn't exist\n");
+                  exit(ENOENT);
+                }
+              else
+                {
+                  fprintf (stderr, "Unknown error\n");
+                  exit(-1);
+                }
+            }
+        }
+      else
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
       break;
     case UNTAG:
       break;

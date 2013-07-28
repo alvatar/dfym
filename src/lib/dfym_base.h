@@ -21,4 +21,6 @@
         }                                                       \
     }                                                           \
 
-int sql_if_row(sqlite3*, sqlite3_stmt**, char*, char*, char*);
+sqlite3 *dfym_open_or_create_database(char * const);
+void dfym_add_tag(sqlite3*, char const * const, char const * const);
+int dfym_sql_if_row(sqlite3*, sqlite3_stmt**, char const * const, char const * const, char const * const);
