@@ -119,14 +119,7 @@ int dfym_remove_tag(sqlite3 *db,
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
   CALL_SQLITE (bind_text (stmt, 2, tag, strlen (tag), 0));
-  /* CALL_SQLITE_EXPECT (step(stmt), DONE); */
-  do
-    {
-      step = sqlite3_step(stmt);
-      if (step == SQLITE_ROW)
-        printf("%s\n", sqlite3_column_text(stmt,0));
-    }
-  while (step != SQLITE_DONE);
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
 
   return DFYM_OK;
 }
