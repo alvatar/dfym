@@ -75,14 +75,14 @@ int main(int argc, char **argv)
       exit(EINVAL);
     }
 
-  /* Argument parsing */
+  /* Arguments */
   int opt;
   int random_flag = 0;
   char *number_value = NULL;
   int filter_files_flag = 0;
   int filter_directories_flag = 0;
 
-  /* Arguments:
+  /* Flags:
    * r
    * n has a required argument
    * f
@@ -125,14 +125,14 @@ int main(int argc, char **argv)
          filter_files_flag,
          filter_directories_flag);
 
-  /* Database */
+  /* Database preparation */
   struct passwd *pw = getpwuid(getuid());
   char *homedir = pw->pw_dir;
   gchar *db_path = g_strconcat(homedir, "/.dfym.db", NULL);
 
   sqlite3 *db = NULL;
 
-  /* Locate first argument */
+  /* Locate arguments */
   do
     optind++;
   while (strncmp(argv[optind], "-", 1) == 0);
