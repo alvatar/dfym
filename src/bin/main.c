@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <errno.h>
 #include <getopt.h>
 #include <string.h>
 #include <ctype.h>
@@ -13,28 +14,28 @@
 
 #include "dfym_base.h"
 
-sqlite3* open_or_create_database(char *db_path)
+typedef enum {TAG, UNTAG, SHOW, SEARCH, DISCOVER, RENAME, RENAME_TAG } command_t;
+
+sqlite3 *dfym_open_or_create_database(char *db_path)
 {
   sqlite3 *db = NULL;
   char *exec_error_msg = NULL;
-  char *sql = NULL;
-  sqlite3_stmt *stmt = NULL;
 
-  CALL_SQLITE(open(db_path, &db));
+  CALL_SQLITE (open(db_path, &db));
 
-  CALL_SQLITE_EXPECT( exec(db,
+  CALL_SQLITE_EXPECT (exec(db,
                            "create table if not exists tags("
                            "id       integer primary key,"
                            "name     text               not null"
                            ")",
                            NULL, 0, &exec_error_msg), OK);
-  CALL_SQLITE_EXPECT( exec(db,
+  CALL_SQLITE_EXPECT (exec(db,
                            "create table if not exists files("
                            "id       integer primary key,"
                            "name     text               not null"
                            ")",
                            NULL, 0, &exec_error_msg), OK);
-  CALL_SQLITE_EXPECT( exec(db,
+  CALL_SQLITE_EXPECT (exec(db,
                            "create table if not exists taggings("
                            "id          integer primary key,"
                            "tag_id      integer not null,"
@@ -46,56 +47,63 @@ sqlite3* open_or_create_database(char *db_path)
   return db;
 }
 
+// TODO: const
+int dfym_add_tag(sqlite3 *db, char *tag, char *file)
+{
+  char *sql = NULL;
+  /* char *exec_error_msg = NULL; */
+  sqlite3_stmt *stmt = NULL;
+
+  /* Insert tag */
+  sql = "INSERT INTO tags ( name ) VALUES ( ? )";
+
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, tag, strlen (tag), 0));
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
+  sqlite3_int64 tag_id = sqlite3_last_insert_rowid(db);
+
+  /* Insert file */
+  sql = "INSERT INTO files ( name ) VALUES ( ? )";
+
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
+  sqlite3_int64 file_id = sqlite3_last_insert_rowid(db);
+
+  /* Insert tagging relation */
+  sql = "INSERT INTO taggings ( tag_id, file_id ) VALUES ( ?1, ?2 )";
+
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_int (stmt, 1, tag_id));
+  CALL_SQLITE (bind_int (stmt, 2, file_id));
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
+
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
-  /* Read directory files */
-  /*
-  GDir *dir;
-  GError *error;
-  const gchar *filename;
-
-  dir = g_dir_open(argv[1], 0, &error);
-  while ( (filename = g_dir_read_name(dir)) )
-    {
-      printf("%s\n", filename);
-    }
-    */
-
+  /* Commands */
+  command_t command = 0;
   if (argc < 2)
     {
       fprintf (stderr, "Needs a command argument. Please refer to help using: \"dfym help\"\n");
-      exit(1);
+      exit(EINVAL);
     }
-
-  /* Commands */
-  if (!strcmp("tag", argv[1]))
-    {
-      printf("ADD TAG\n");
-    }
+  else if (!strcmp("tag", argv[1]))
+    command = TAG;
   else if (!strcmp("untag", argv[1]))
-    {
-      printf("REMOVE A TAG FROM A FILE OR DIRECTORY\n");
-    }
+    command = UNTAG;
   else if (!strcmp("show", argv[1]))
-    {
-      printf("SHOW TAGS ASSIGNED TO A FILE OR DIRECTORY\n");
-    }
+    command = SHOW;
   else if (!strcmp("search", argv[1]))
-    {
-      printf("SEARCH WITH TAGS\n");
-    }
+    command = SEARCH;
   else if (!strcmp("discover", argv[1]))
-    {
-      printf("GET UNTAGGED CONTENTS OF A DIRECTORY\n");
-    }
+    command = DISCOVER;
   else if (!strcmp("rename", argv[1]))
-    {
-      printf("RENAME FILE OR DIRECTORY\n");
-    }
-  else if (!strcmp("rename", argv[1]))
-    {
-      printf("RENAME FILE OR DIRECTORY\n");
-    }
+    command = RENAME;
+  else if (!strcmp("rename-tag", argv[1]))
+    command = RENAME_TAG;
   else if (!strcmp("help", argv[1]))
     {
       printf("Usage: dfym [command] [flags] [arguments...]\n"
@@ -115,14 +123,15 @@ int main(int argc, char **argv)
              "-nX         -- show only the first X occurences of the query\n"
              "-r          -- randomize order of query\n"
             );
+      exit(0);
     }
   else
     {
-      printf("Please provide a command\n");
+      fprintf (stderr, "Wrong command. Please refer to help using: \"dfym help\"\n");
+      exit(EINVAL);
     }
 
   /* Argument parsing */
-
   int opt;
   int random_flag = 0;
   char *number_value = NULL;
@@ -166,35 +175,59 @@ int main(int argc, char **argv)
         }
     }
 
-  printf("Flags: r=%i, n=%s, f=%i, d=%i\n",
-         random_flag,
-         number_value,
-         filter_files_flag,
-         filter_directories_flag);
+  /* Read directory files */
+  /*
+  GDir *dir;
+  GError *error;
+  const gchar *filename;
+
+  dir = g_dir_open(argv[1], 0, &error);
+  while ( (filename = g_dir_read_name(dir)) )
+    {
+      printf("%s\n", filename);
+    }
+    */
+
 
   /* Database */
   struct passwd *pw = getpwuid(getuid());
   char *homedir = pw->pw_dir;
   gchar *db_path = g_strconcat(homedir, "/.dfym.db", NULL);
 
-  sqlite3 *db = open_or_create_database(db_path);
-
-  char *exec_error_msg = NULL;
+  sqlite3 *db = NULL;
+  /*
   char *sql = NULL;
+  char *exec_error_msg = NULL;
   sqlite3_stmt *stmt = NULL;
-  sql = "INSERT INTO files ( name ) VALUES ( ? )";
+  */
 
-  CALL_SQLITE( prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL) );
-  CALL_SQLITE (bind_text (stmt,
-                          1,
-                          "Dvorak",
-                          strlen ("Dvorak"),
-                          0
-                         ));
-  CALL_SQLITE_EXPECT (step(stmt), DONE);
-  sqlite3_int64 last_file_id = sqlite3_last_insert_rowid(db);
-  printf("LAST ID: %i\n", last_file_id);
+  /* Locate first argument */
+  do
+    optind++;
+  while (strncmp(argv[optind], "-", 1) == 0);
 
+  /* Command logic */
+  switch (command)
+    {
+    case TAG:
+      db = dfym_open_or_create_database(db_path);
+      dfym_add_tag( db, argv[optind], argv[optind+1] );
+      break;
+    case UNTAG:
+      break;
+    case SHOW:
+      break;
+    case SEARCH:
+      break;
+    case DISCOVER:
+      break;
+    case RENAME:
+      break;
+    case RENAME_TAG:
+      break;
+    default:
+      exit(EINVAL);
+    }
 
   g_free(db_path);
   return 0;
