@@ -108,7 +108,6 @@ int dfym_remove_tag(sqlite3 *db,
 {
   char *sql = NULL;
   sqlite3_stmt *stmt = NULL;
-  int step;
 
   /* Insert tagging relation if doesn't exist */
   sql = 
@@ -152,6 +151,19 @@ int dfym_show_file_tags(sqlite3 *db,
 
   return DFYM_OK;
 }
+
+/*
+ * dfym_sql_if_row
+ */
+int dfym_search_with_tag(sqlite3 *db,
+                         char const * const tag,
+                         unsigned long int number_results,
+                         unsigned char options)
+{
+  // XXX
+  return DFYM_OK;
+}
+
 
 /*
  * dfym_sql_if_row

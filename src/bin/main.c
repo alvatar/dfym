@@ -25,6 +25,12 @@ typedef enum
   RENAME_TAG
 } command_t;
 
+typedef enum {
+    OPT_F = 0x01,
+    OPT_D = 0x02,
+    OPT_R = 0x04
+} flag_t;
+
 int main(int argc, char **argv)
 {
   /* Commands */
@@ -53,19 +59,24 @@ int main(int argc, char **argv)
       printf("Usage: dfym [command] [flags] [arguments...]\n"
              "\n"
              "Commands:\n"
-             "tag [tag] [file]      -- add tag to file or directory\n"
-             "untag                 -- remove tag from file or directory\n"
-             "show                  -- show the tags of a file directory\n"
-             "search                -- search for files or directories that match this tag\n"
-             "discover              -- list files or directories in a directory that are haven't been tagged\n"
-             "rename                -- rename files or directories\n"
-             "rename-tag            -- rename a tag\n"
+             "tag [tag] [file]      add tag to file or directory\n"
+             "untag                 remove tag from file or directory\n"
+             "show                  show the tags of a file directory\n"
+             "search                search for files or directories that match this tag\n"
+             "                      flags:\n"
+             "                        -f show only files\n"
+             "                        -d show only directories\n"
+             "                        -nX show only the first X occurences of the query\n"
+             "                        -r randomize order of results\n"
+             "discover              list files or directories in a directory that are haven't been tagged\n"
+             "                      flags:\n"
+             "                        -f show only files\n"
+             "                        -d show only directories\n"
+             "                        -nX show only the first X occurences of the query\n"
+             "                        -r randomize order of results\n"
+             "rename                rename files or directories\n"
+             "rename-tag            rename a tag\n"
              "\n"
-             "Flags:\n"
-             "-f                    -- show only files\n"
-             "-d                    -- show only directories\n"
-             "-nX                   -- show only the first X occurences of the query\n"
-             "-r                    -- randomize order of query\n"
             );
       exit(0);
     }
@@ -77,32 +88,66 @@ int main(int argc, char **argv)
 
   /* Arguments */
   int opt;
-  int random_flag = 0;
-  char *number_value = NULL;
-  int filter_files_flag = 0;
-  int filter_directories_flag = 0;
+  char flags = 0;
+  char *number_value_flag = NULL;
 
   /* Flags:
-   * r
-   * n has a required argument
-   * f
-   * d
+   * r: randomize results
+   * n: number of entries to return (has a required argument)
+   * f: show only files
+   * d: show only directories
    * */
   while ((opt = getopt(argc, argv, "rn:fd")) != -1)
     {
       switch (opt)
         {
         case 'r':
-          random_flag = 1;
+          flags |= OPT_R;
+          if (command == TAG
+              || command == UNTAG
+              || command == SHOW
+              || command == RENAME
+              || command == RENAME_TAG)
+            {
+              fprintf (stderr, "-r flag not available for this command\n");
+              exit(EINVAL);
+            }
           break;
         case 'n':
-          number_value = optarg;
+          number_value_flag = optarg;
+          if (command == TAG
+              || command == UNTAG
+              || command == SHOW
+              || command == RENAME
+              || command == RENAME_TAG)
+            {
+              fprintf (stderr, "-n flag not available for this command\n");
+              exit(EINVAL);
+            }
           break;
         case 'f':
-          filter_files_flag = 1;
+          flags |= OPT_F;
+          if (command == TAG
+              || command == UNTAG
+              || command == SHOW
+              || command == RENAME
+              || command == RENAME_TAG)
+            {
+              fprintf (stderr, "-f flag not available for this command\n");
+              exit(EINVAL);
+            }
           break;
         case 'd':
-          filter_directories_flag = 1;
+          flags |= OPT_D;
+          if (command == TAG
+              || command == UNTAG
+              || command == SHOW
+              || command == RENAME
+              || command == RENAME_TAG)
+            {
+              fprintf (stderr, "-d flag not available for this command\n");
+              exit(EINVAL);
+            }
           break;
         case '?':
           if (optopt == 'n')
@@ -113,17 +158,12 @@ int main(int argc, char **argv)
             fprintf (stderr,
                      "Unknown option character `\\x%x'.\n",
                      optopt);
+          exit(EINVAL);
           break;
         default:
           abort();
         }
     }
-
-  printf("Flags: r=%i, n=%s, f=%i, d=%i\n\n",
-         random_flag,
-         number_value,
-         filter_files_flag,
-         filter_directories_flag);
 
   /* Database preparation */
   struct passwd *pw = getpwuid(getuid());
@@ -134,7 +174,7 @@ int main(int argc, char **argv)
 
   /* Locate arguments */
   do
-    if(optind < argc-1)
+    if (optind < argc-1)
       optind++;
   while (strncmp(argv[optind], "-", 1) == 0);
 
@@ -142,7 +182,7 @@ int main(int argc, char **argv)
   db = dfym_open_or_create_database (db_path);
   switch (command)
     {
-    /* tag command */
+      /* tag command */
     case TAG:
       if (!(argc-optind == 2))
         {
@@ -177,7 +217,7 @@ int main(int argc, char **argv)
             }
         }
       break;
-    /* untag command */
+      /* untag command */
     case UNTAG:
       if (!(argc-optind == 2))
         {
@@ -213,7 +253,7 @@ int main(int argc, char **argv)
             }
         }
       break;
-    /* show command */
+      /* show command */
     case SHOW:
       if (!(argc-optind == 1))
         {
@@ -247,16 +287,25 @@ int main(int argc, char **argv)
             }
         }
       break;
-    /* search command */
+      /* search command */
     case SEARCH:
+      if (!(argc-optind == 1))
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
+      else
+        {
+          dfym_search_with_tag(db, argv[optind], flags, atoi(number_value_flag));
+        }
       break;
-    /* discover command */
+      /* discover command */
     case DISCOVER:
       break;
-    /* rename command */
+      /* rename command */
     case RENAME:
       break;
-    /* rename-tag command */
+      /* rename-tag command */
     case RENAME_TAG:
       break;
     default:
