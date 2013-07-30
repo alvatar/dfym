@@ -9,6 +9,20 @@
 
 #include "dfym_base.h"
 
+
+/*
+ * Callback for sqlite3_exec that will will print all results
+ */
+static int callback_print(void *NotUsed, int argc, char **argv, char **azColName)
+{
+  for (int i=0; i<argc; i++)
+    {
+      /* printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL"); */
+      printf("%s\n", argv[i] ? argv[i] : "NULL");
+    }
+  return 0;
+}
+
 /*
  * dfym_open_or_create_database
  */
@@ -157,7 +171,7 @@ int dfym_show_file_tags(sqlite3 *db,
 #endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
-  if(sqlite3_step(stmt) == SQLITE_DONE)
+  if (sqlite3_step(stmt) == SQLITE_DONE)
     return DFYM_NOT_EXISTS;
 
   sql =
@@ -183,6 +197,36 @@ int dfym_show_file_tags(sqlite3 *db,
 }
 
 /*
+ * dfym_all_tags
+ */
+int dfym_all_tags(sqlite3 *db)
+{
+  char *exec_error_msg = NULL;
+  char *sql = "SELECT name FROM tags";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+  CALL_SQLITE_EXPECT( exec(db, sql, callback_print, 0, &exec_error_msg), OK);
+
+  return DFYM_OK;
+}
+
+/*
+ * dfym_all_tagged
+ */
+int dfym_all_tagged(sqlite3 *db)
+{
+  char *exec_error_msg = NULL;
+  char *sql = "SELECT name FROM files";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+  CALL_SQLITE_EXPECT( exec(db, sql, callback_print, 0, &exec_error_msg), OK);
+
+  return DFYM_OK;
+}
+
+/*
  * dfym_sql_if_row
  */
 int dfym_search_with_tag(sqlite3 *db,
@@ -195,14 +239,14 @@ int dfym_search_with_tag(sqlite3 *db,
 
   char *sql = NULL;
   sql = g_strconcat(
-            "SELECT f.name "
-            "FROM files f "
-            "JOIN taggings tgs ON (tgs.file_id = f.id) "
-            "JOIN tags t ON (tgs.tag_id = t.id) "
-            "WHERE t.name = ?1",
-            (options & OPT_RANDOM) ? " ORDER BY RANDOM()" : "",
-            number_results ? " LIMIT ?2" : "",
-            NULL);
+          "SELECT f.name "
+          "FROM files f "
+          "JOIN taggings tgs ON (tgs.file_id = f.id) "
+          "JOIN tags t ON (tgs.tag_id = t.id) "
+          "WHERE t.name = ?1",
+          (options & OPT_RANDOM) ? " ORDER BY RANDOM()" : "",
+          number_results ? " LIMIT ?2" : "",
+          NULL);
 
 #ifdef SQL_VERBOSE
   printf("** SQL **\n%s\n", sql);
@@ -217,10 +261,10 @@ int dfym_search_with_tag(sqlite3 *db,
       step = sqlite3_step(stmt);
       if (step == SQLITE_ROW)
         {
-          char const * const element = sqlite3_column_text(stmt,0);
+          const unsigned char *element = sqlite3_column_text(stmt,0);
           if (  !(options & (OPT_FILES | OPT_DIRECTORIES))
-             || ((options & OPT_FILES) && g_file_test(element, G_FILE_TEST_IS_REGULAR))
-             || ((options & OPT_DIRECTORIES) && g_file_test(element, G_FILE_TEST_IS_DIR)))
+                || ((options & OPT_FILES) && g_file_test((const char*)element, G_FILE_TEST_IS_REGULAR))
+                || ((options & OPT_DIRECTORIES) && g_file_test((const char*)element, G_FILE_TEST_IS_DIR)))
             printf("%s\n", element);
         }
     }
@@ -242,13 +286,11 @@ int dfym_sql_if_row(sqlite3 *db,
                     char const *const sql_if_false)
 {
   sqlite3_stmt *stmt = NULL;
-  /* char *exec_error_msg = NULL; */
   int return_step = 0;
 
   CALL_SQLITE( prepare_v2(db, sql_test, strlen (sql_test) + 1, &stmt, NULL) );
   if ((sqlite3_step(stmt)==SQLITE_ROW))
     {
-      /* CALL_SQLITE_EXPECT( exec(db, sql_if_true, NULL, 0, &exec_error_msg), OK); */
       if (sql_if_true)
         {
           CALL_SQLITE( prepare_v2(db, sql_if_true, strlen (sql_if_true) + 1, &stmt, NULL) );
@@ -260,7 +302,6 @@ int dfym_sql_if_row(sqlite3 *db,
     }
   else
     {
-      /* CALL_SQLITE_EXPECT( exec(db, sql_if_false, NULL, 0, &exec_error_msg), OK); */
       if (sql_if_false)
         {
           CALL_SQLITE( prepare_v2(db, sql_if_false, strlen (sql_if_false) + 1, &stmt, NULL) );

@@ -186,12 +186,12 @@ int main(int argc, char **argv)
   /* TAGS command */
   else if (!strcmp("tags", argv[1]))
     {
-      /* dfym_all_tags(db); */
+      dfym_all_tags(db);
     }
   /* TAGGED command */
   else if (!strcmp("tagged", argv[1]))
     {
-      printf("TAGGED\n");
+      dfym_all_tagged(db);
     }
   /* SEARCH command */
   else if (!strcmp("search", argv[1]))
