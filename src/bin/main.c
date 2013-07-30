@@ -166,7 +166,7 @@ int main(int argc, char **argv)
                   exit(1);
                 default:
                   fprintf (stderr, "Database error\n");
-                  exit(192);
+                  exit(1);
                 }
             }
           else
@@ -186,12 +186,26 @@ int main(int argc, char **argv)
   /* TAGS command */
   else if (!strcmp("tags", argv[1]))
     {
-      dfym_all_tags(db);
+      switch (dfym_all_tags(db))
+        {
+        case DFYM_OK:
+          break;
+        default:
+          fprintf (stderr, "Database error\n");
+          exit(1);
+        }
     }
   /* TAGGED command */
   else if (!strcmp("tagged", argv[1]))
     {
-      dfym_all_tagged(db);
+      switch (dfym_all_tagged(db))
+        {
+        case DFYM_OK:
+          break;
+        default:
+          fprintf (stderr, "Database error\n");
+          exit(1);
+        }
     }
   /* SEARCH command */
   else if (!strcmp("search", argv[1]))
