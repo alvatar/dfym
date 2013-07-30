@@ -151,6 +151,15 @@ int dfym_show_file_tags(sqlite3 *db,
   sqlite3_stmt *stmt = NULL;
   int step;
 
+  sql = "SELECT id FROM files WHERE files.name = ?";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
+  if(sqlite3_step(stmt) == SQLITE_DONE)
+    return DFYM_NOT_EXISTS;
+
   sql =
     "SELECT t.name "
     "FROM files f "

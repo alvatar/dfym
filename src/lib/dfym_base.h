@@ -24,6 +24,7 @@
 typedef enum
 {
   DFYM_OK,
+  DFYM_NOT_EXISTS,
   DFYM_DATABASE_ERROR
 } dfym_status_t;
 
