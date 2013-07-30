@@ -9,11 +9,26 @@
 
 #include "dfym_base.h"
 
+void shuffle(void **array, size_t n)
+{
+  srand (time(NULL));
+  if (n > 1)
+    {
+      size_t i;
+      for (i = 0; i < n - 1; i++)
+        {
+          size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
+          void *t = array[j];
+          array[j] = array[i];
+          array[i] = t;
+        }
+    }
+}
 
 /*
  * Callback for sqlite3_exec that will will print all results
  */
-static int callback_print(void *NotUsed, int argc, char **argv, char **azColName)
+static int callback_print_sqlite(void *NotUsed, int argc, char **argv, char **azColName)
 {
   for (int i=0; i<argc; i++)
     {
@@ -206,7 +221,7 @@ int dfym_all_tags(sqlite3 *db)
 #ifdef SQL_VERBOSE
   printf("** SQL **\n%s\n", sql);
 #endif
-  CALL_SQLITE_EXPECT( exec(db, sql, callback_print, 0, &exec_error_msg), OK);
+  CALL_SQLITE_EXPECT( exec(db, sql, callback_print_sqlite, 0, &exec_error_msg), OK);
 
   return DFYM_OK;
 }
@@ -221,7 +236,7 @@ int dfym_all_tagged(sqlite3 *db)
 #ifdef SQL_VERBOSE
   printf("** SQL **\n%s\n", sql);
 #endif
-  CALL_SQLITE_EXPECT( exec(db, sql, callback_print, 0, &exec_error_msg), OK);
+  CALL_SQLITE_EXPECT( exec(db, sql, callback_print_sqlite, 0, &exec_error_msg), OK);
 
   return DFYM_OK;
 }
@@ -294,17 +309,25 @@ int dfym_discover_untagged(sqlite3 *db,
 #ifdef SQL_VERBOSE
   printf("** SQL **\n%s\n", sql);
 #endif
+
   dir = g_dir_open(directory, 0, &error);
-  while ((filename = g_dir_read_name(dir))
-         && (!number_results || limit < number_results))
+  /* If the user requests randomized results, we need to get all directory contents */
+  if (options & OPT_RANDOM)
     {
-      CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
-      realpath(filename, path);
-      CALL_SQLITE (bind_text (stmt, 1, path, strlen (path), 0));
-      do
+      GPtrArray *dir_contents = g_ptr_array_new();
+      while ((filename = g_dir_read_name (dir)))
         {
+          g_ptr_array_add (dir_contents, (gpointer)filename);
+        }
+      shuffle(dir_contents->pdata, dir_contents->len);
+
+      for (int i=0; i<dir_contents->len && limit<number_results; i++)
+        {
+          CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+          realpath(dir_contents->pdata[i], path);
+          CALL_SQLITE (bind_text (stmt, 1, path, strlen (path), 0));
           step = sqlite3_step(stmt);
-          if (step == SQLITE_ROW
+          if (step == SQLITE_DONE
               && (!(options & (OPT_FILES | OPT_DIRECTORIES))
                   || ((options & OPT_FILES) && g_file_test((const char *)path, G_FILE_TEST_IS_REGULAR))
                   || ((options & OPT_DIRECTORIES) && g_file_test((const char *)path, G_FILE_TEST_IS_DIR))))
@@ -313,8 +336,29 @@ int dfym_discover_untagged(sqlite3 *db,
               limit++;
             }
         }
-      while (step != SQLITE_DONE);
+      g_ptr_array_free (dir_contents, TRUE);
     }
+  /* Otherwise, we can deal directly with SQL */
+  else
+    {
+      while ((filename = g_dir_read_name(dir))
+             && (!number_results || limit < number_results))
+        {
+          CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+          realpath(filename, path);
+          CALL_SQLITE (bind_text (stmt, 1, path, strlen (path), 0));
+          step = sqlite3_step(stmt);
+          if (step == SQLITE_DONE
+              && (!(options & (OPT_FILES | OPT_DIRECTORIES))
+                  || ((options & OPT_FILES) && g_file_test((const char *)path, G_FILE_TEST_IS_REGULAR))
+                  || ((options & OPT_DIRECTORIES) && g_file_test((const char *)path, G_FILE_TEST_IS_DIR))))
+            {
+              printf("%s\n", path);
+              limit++;
+            }
+        }
+    }
+  g_dir_close(dir);
   return DFYM_OK;
 }
 
