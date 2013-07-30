@@ -247,7 +247,6 @@ int dfym_search_with_tag(sqlite3 *db,
           (options & OPT_RANDOM) ? " ORDER BY RANDOM()" : "",
           number_results ? " LIMIT ?2" : "",
           NULL);
-
 #ifdef SQL_VERBOSE
   printf("** SQL **\n%s\n", sql);
 #endif
@@ -263,18 +262,61 @@ int dfym_search_with_tag(sqlite3 *db,
         {
           const unsigned char *element = sqlite3_column_text(stmt,0);
           if (  !(options & (OPT_FILES | OPT_DIRECTORIES))
-                || ((options & OPT_FILES) && g_file_test((const char*)element, G_FILE_TEST_IS_REGULAR))
-                || ((options & OPT_DIRECTORIES) && g_file_test((const char*)element, G_FILE_TEST_IS_DIR)))
+                || ((options & OPT_FILES) && g_file_test((const char *)element, G_FILE_TEST_IS_REGULAR))
+                || ((options & OPT_DIRECTORIES) && g_file_test((const char *)element, G_FILE_TEST_IS_DIR)))
             printf("%s\n", element);
         }
     }
   while (step != SQLITE_DONE);
 
   g_free(sql);
-
   return DFYM_OK;
 }
 
+/*
+ * dfym_discover_untagged
+ */
+int dfym_discover_untagged(sqlite3 *db,
+                           char const *const directory,
+                           unsigned long int number_results,
+                           unsigned char options)
+{
+  GDir *dir;
+  GError *error;
+  const gchar *filename;
+  char *sql = NULL;
+  sqlite3_stmt *stmt = NULL;
+  int step;
+  int limit = 0;
+  char path[PATH_MAX];
+
+  sql = "SELECT name FROM files WHERE files.name = ?";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+  dir = g_dir_open(directory, 0, &error);
+  while ((filename = g_dir_read_name(dir))
+         && (!number_results || limit < number_results))
+    {
+      CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+      realpath(filename, path);
+      CALL_SQLITE (bind_text (stmt, 1, path, strlen (path), 0));
+      do
+        {
+          step = sqlite3_step(stmt);
+          if (step == SQLITE_ROW
+              && (!(options & (OPT_FILES | OPT_DIRECTORIES))
+                  || ((options & OPT_FILES) && g_file_test((const char *)path, G_FILE_TEST_IS_REGULAR))
+                  || ((options & OPT_DIRECTORIES) && g_file_test((const char *)path, G_FILE_TEST_IS_DIR))))
+            {
+              printf("%s\n", path);
+              limit++;
+            }
+        }
+      while (step != SQLITE_DONE);
+    }
+  return DFYM_OK;
+}
 
 /*
  * dfym_sql_if_row

@@ -47,7 +47,9 @@ int dfym_all_tags(sqlite3 *);
 
 int dfym_all_tagged(sqlite3 *);
 
-int dfym_search_with_tag(sqlite3 *, char const *const,  unsigned long int, unsigned char);
+int dfym_search_with_tag(sqlite3 *, char const *const, unsigned long int, unsigned char);
+
+int dfym_discover_untagged(sqlite3 *, char const *const, unsigned long int, unsigned char);
 
 int dfym_sql_if_row(sqlite3 *, sqlite3_stmt **, char const *const, char const *const, char const *const);
 

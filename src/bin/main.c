@@ -50,7 +50,7 @@ int main(int argc, char **argv)
              "                            -d show only directories\n"
              "                            -nX show only the first X occurences of the query\n"
              "                            -r randomize order of results\n"
-             "discover                  list files or directories in a directory that are haven't been tagged\n"
+             "discover [directory]      list untagged resources within a given directory\n"
              "                            flags:\n"
              "                              -f show only files\n"
              "                              -d show only directories\n"
@@ -178,18 +178,29 @@ int main(int argc, char **argv)
   /* TAGS command */
   else if (!strcmp("tags", argv[1]))
     {
-      switch (dfym_all_tags(db))
+      if (argc != 2)
         {
-        case DFYM_OK:
-          break;
-        default:
-          fprintf (stderr, "Database error\n");
-          exit(1);
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
         }
+      else
+        switch (dfym_all_tags(db))
+          {
+          case DFYM_OK:
+            break;
+          default:
+            fprintf (stderr, "Database error\n");
+            exit(1);
+          }
     }
   /* TAGGED command */
   else if (!strcmp("tagged", argv[1]))
     {
+      if (argc != 2)
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
       switch (dfym_all_tagged(db))
         {
         case DFYM_OK:
@@ -202,11 +213,10 @@ int main(int argc, char **argv)
   /* SEARCH command */
   else if (!strcmp("search", argv[1]))
     {
-      /* printf("SEARCH\n");
       int opt;
       char flags = 0;
       char *number_value_flag = NULL;
-      |+ Command flags +|
+      /* Command flags */
       while ((opt = getopt(argc-1, argv+1, "rn:fd")) != -1)
         {
           switch (opt)
@@ -242,7 +252,8 @@ int main(int argc, char **argv)
               abort();
             }
         }
-      if ((argc - optind - 1) != 1)
+      optind++; /* we are looking into the command, not the executable */
+      if ((argc - optind) != 1)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
           exit(EINVAL);
@@ -250,15 +261,74 @@ int main(int argc, char **argv)
       else
         {
           unsigned long int number_flag = 0;
-          if (number_value_flag)
-            number_flag = atoi(number_value_flag);
-          dfym_search_with_tag(db, argv[optind], number_flag, flags);
-        } */
+          if (number_value_flag) number_flag = atoi(number_value_flag);
+          switch (dfym_search_with_tag(db, argv[optind], number_flag, flags))
+            {
+            case DFYM_OK:
+              break;
+            default:
+              fprintf (stderr, "Database error\n");
+              exit(1);
+            }
+        }
     }
-  /* discover command */
+  /* DISCOVER command */
   else if (!strcmp("discover", argv[1]))
     {
-      printf("DISCOVER\n");
+      int opt;
+      char flags = 0;
+      char *number_value_flag = NULL;
+      /* Command flags */
+      while ((opt = getopt(argc-1, argv+1, "rn:fd")) != -1)
+        {
+          switch (opt)
+            {
+            case 'r':
+              flags |= OPT_RANDOM;
+              break;
+            case 'n':
+              number_value_flag = optarg;
+              break;
+            case 'f':
+              flags |= OPT_FILES;
+              break;
+            case 'd':
+              flags |= OPT_DIRECTORIES;
+              break;
+            case '?':
+              if (optopt == 'n')
+                fprintf (stderr, "Option -n requires an argument.\n");
+              else if (isprint (optopt))
+                fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+              else
+                fprintf (stderr,
+                         "Unknown option character `\\x%x'.\n",
+                         optopt);
+              exit(EINVAL);
+              break;
+            default:
+              abort();
+            }
+        }
+      optind++; /* we are looking into the command, not the executable */
+      if ((argc - optind) != 1)
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
+      else
+        {
+          const char *target_dir = argv[optind];
+          unsigned long int number_flag = 0;
+          if (number_value_flag) number_flag = atoi(number_value_flag);
+          if (g_file_test(target_dir, G_FILE_TEST_IS_DIR))
+            dfym_discover_untagged(db, target_dir, number_flag, flags);
+          else
+            {
+              fprintf (stderr, "Argument is not a directory\n");
+              exit(ENOENT);
+            }
+        }
     }
   /* rename command */
   else if (!strcmp("rename", argv[1]))
