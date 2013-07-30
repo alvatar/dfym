@@ -86,26 +86,24 @@ int main(int argc, char **argv)
           const char *argument_path = argv[3];
           char path[PATH_MAX];
           if (realpath(argument_path, path))
-            {
-              if (dfym_add_tag (db, tag, path) != DFYM_OK)
-                {
-                  fprintf (stderr, "Database error\n");
-                  exit(1);
-                }
-            }
+            switch (dfym_add_tag (db, tag, path))
+              {
+              case DFYM_OK:
+                break;
+              default:
+                fprintf (stderr, "Database error\n");
+                exit(1);
+              }
           else
-            {
-              if (errno == ENOENT)
-                {
-                  fprintf (stderr, "File doesn't exist\n");
-                  exit(ENOENT);
-                }
-              else
-                {
-                  fprintf (stderr, "Unknown error\n");
-                  exit(1);
-                }
-            }
+            switch (errno)
+              {
+              case ENOENT:
+                fprintf (stderr, "File doesn't exist\n");
+                exit(ENOENT);
+              default:
+                fprintf (stderr, "Unknown error\n");
+                exit(1);
+              }
         }
     }
   /* UNTAG command */
@@ -122,26 +120,24 @@ int main(int argc, char **argv)
           const char *argument_path = argv[3];
           char path[PATH_MAX];
           if (realpath(argument_path, path))
-            {
-              if (dfym_remove_tag (db, tag, path) != DFYM_OK)
-                {
-                  fprintf (stderr, "Database error\n");
-                  exit(1);
-                }
-            }
+            switch (dfym_remove_tag (db, tag, path))
+              {
+              case DFYM_OK:
+                break;
+              default:
+                fprintf (stderr, "Database error\n");
+                exit(1);
+              }
           else
-            {
-              if (errno == ENOENT)
-                {
-                  fprintf (stderr, "File doesn't exist\n");
-                  exit(ENOENT);
-                }
-              else
-                {
-                  fprintf (stderr, "Unknown error\n");
-                  exit(1);
-                }
-            }
+            switch (errno)
+              {
+              case ENOENT:
+                fprintf (stderr, "File doesn't exist\n");
+                exit(ENOENT);
+              default:
+                fprintf (stderr, "Unknown error\n");
+                exit(1);
+              }
         }
     }
   /* SHOW command */
@@ -157,30 +153,26 @@ int main(int argc, char **argv)
           const char *argument_path = argv[2];
           char path[PATH_MAX];
           if (realpath(argument_path, path))
-            {
-              switch ( dfym_show_file_tags (db, path))
-                {
-                case DFYM_OK:
-                  break;
-                case DFYM_NOT_EXISTS:
-                  exit(1);
-                default:
-                  fprintf (stderr, "Database error\n");
-                  exit(1);
-                }
-            }
+            switch ( dfym_show_file_tags (db, path))
+              {
+              case DFYM_OK:
+                break;
+              case DFYM_NOT_EXISTS:
+                exit(1);
+              default:
+                fprintf (stderr, "Database error\n");
+                exit(1);
+              }
           else
-            {
-              switch (errno)
-                {
-                case ENOENT:
-                  fprintf (stderr, "File doesn't exist\n");
-                  exit(ENOENT);
-                default:
-                  fprintf (stderr, "Unknown error\n");
-                  exit(1);
-                }
-            }
+            switch (errno)
+              {
+              case ENOENT:
+                fprintf (stderr, "File doesn't exist\n");
+                exit(ENOENT);
+              default:
+                fprintf (stderr, "Unknown error\n");
+                exit(1);
+              }
         }
     }
   /* TAGS command */
