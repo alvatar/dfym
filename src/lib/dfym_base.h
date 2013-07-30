@@ -27,6 +27,12 @@ typedef enum
   DFYM_DATABASE_ERROR
 } dfym_status_t;
 
+typedef enum {
+    OPT_FILES = 1 << 0,
+    OPT_DIRECTORIES = 1 << 1,
+    OPT_RANDOM = 1 << 2
+} query_flag_t;
+
 sqlite3 *dfym_open_or_create_database(char *const);
 int dfym_add_tag(sqlite3 *, char const *const, char const *const);
 int dfym_remove_tag(sqlite3 *, char const *const, char const *const);

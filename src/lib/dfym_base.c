@@ -3,6 +3,9 @@
 #include <stdlib.h>
 //SQLite
 #include <sqlite3.h>
+// Glib
+#include <glib.h>
+#include <glib/gstdio.h>
 
 #include "dfym_base.h"
 
@@ -53,10 +56,16 @@ int dfym_add_tag(sqlite3 *db,
 
   /* Insert tag if doesn't exist */
   sql = "INSERT OR IGNORE INTO tags ( name ) VALUES ( ? )";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, tag, strlen (tag), 0));
   CALL_SQLITE_EXPECT (step(stmt), DONE);
   sql = "SELECT id FROM tags WHERE name=?";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, tag, strlen (tag), 0));
   do
@@ -69,10 +78,16 @@ int dfym_add_tag(sqlite3 *db,
 
   /* Insert file if doesn't exist */
   sql = "INSERT OR IGNORE INTO files ( name ) VALUES ( ? )";
+#ifdef SQL_VERBOSE
+  printf("SQL: %s", sql);
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
   CALL_SQLITE_EXPECT (step(stmt), DONE);
   sql = "SELECT id FROM files WHERE name=?";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
   do
@@ -82,15 +97,15 @@ int dfym_add_tag(sqlite3 *db,
         file_id = sqlite3_column_int(stmt,0);
     }
   while (step != SQLITE_DONE);
-#ifdef SQL_VERBOSE
-  printf("FILE ID: %li\n", (long int)file_id);
-#endif
 
   if (!tag_id || !file_id)
     return DFYM_DATABASE_ERROR;
 
   /* Insert tagging relation if doesn't exist */
   sql = "INSERT OR IGNORE INTO taggings ( tag_id, file_id ) VALUES ( ?1, ?2 )";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_int (stmt, 1, tag_id));
   CALL_SQLITE (bind_int (stmt, 2, file_id));
@@ -110,11 +125,14 @@ int dfym_remove_tag(sqlite3 *db,
   sqlite3_stmt *stmt = NULL;
 
   /* Insert tagging relation if doesn't exist */
-  sql = 
+  sql =
     "DELETE "
     "FROM taggings "
     "WHERE file_id IN (SELECT files.id FROM files WHERE files.name = ?1) "
     "AND tag_id IN (SELECT tags.id FROM tags WHERE tags.name = ?2)";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
   CALL_SQLITE (bind_text (stmt, 2, tag, strlen (tag), 0));
@@ -139,6 +157,9 @@ int dfym_show_file_tags(sqlite3 *db,
     "JOIN taggings tgs ON (tgs.file_id = f.id) "
     "JOIN tags t ON (tgs.tag_id = t.id) "
     "WHERE f.name = ?";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
   do
@@ -156,11 +177,48 @@ int dfym_show_file_tags(sqlite3 *db,
  * dfym_sql_if_row
  */
 int dfym_search_with_tag(sqlite3 *db,
-                         char const * const tag,
+                         char const *const tag,
                          unsigned long int number_results,
                          unsigned char options)
 {
-  // XXX
+  sqlite3_stmt *stmt = NULL;
+  int step;
+
+  char *sql = NULL;
+  sql = g_strconcat(
+            "SELECT f.name "
+            "FROM files f "
+            "JOIN taggings tgs ON (tgs.file_id = f.id) "
+            "JOIN tags t ON (tgs.tag_id = t.id) "
+            "WHERE t.name = ?1",
+            (options & OPT_RANDOM) ? " ORDER BY RANDOM()" : "",
+            number_results ? " LIMIT ?2" : "",
+            NULL);
+
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, tag, strlen (tag), 0));
+  if (number_results)
+    CALL_SQLITE (bind_int (stmt, 2, number_results));
+  do
+    {
+      step = sqlite3_step(stmt);
+      if (step == SQLITE_ROW)
+        {
+          char const * const element = sqlite3_column_text(stmt,0);
+          if (  !(options & (OPT_FILES | OPT_DIRECTORIES))
+             || ((options & OPT_FILES) && g_file_test(element, G_FILE_TEST_IS_REGULAR))
+             || ((options & OPT_DIRECTORIES) && g_file_test(element, G_FILE_TEST_IS_DIR)))
+            printf("%s\n", element);
+        }
+    }
+  while (step != SQLITE_DONE);
+
+  g_free(sql);
+
   return DFYM_OK;
 }
 

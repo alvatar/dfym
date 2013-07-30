@@ -25,12 +25,6 @@ typedef enum
   RENAME_TAG
 } command_t;
 
-typedef enum {
-    OPT_F = 0x01,
-    OPT_D = 0x02,
-    OPT_R = 0x04
-} flag_t;
-
 int main(int argc, char **argv)
 {
   /* Commands */
@@ -102,7 +96,7 @@ int main(int argc, char **argv)
       switch (opt)
         {
         case 'r':
-          flags |= OPT_R;
+          flags |= OPT_RANDOM;
           if (command == TAG
               || command == UNTAG
               || command == SHOW
@@ -126,7 +120,7 @@ int main(int argc, char **argv)
             }
           break;
         case 'f':
-          flags |= OPT_F;
+          flags |= OPT_FILES;
           if (command == TAG
               || command == UNTAG
               || command == SHOW
@@ -138,7 +132,7 @@ int main(int argc, char **argv)
             }
           break;
         case 'd':
-          flags |= OPT_D;
+          flags |= OPT_DIRECTORIES;
           if (command == TAG
               || command == UNTAG
               || command == SHOW
@@ -296,7 +290,10 @@ int main(int argc, char **argv)
         }
       else
         {
-          dfym_search_with_tag(db, argv[optind], flags, atoi(number_value_flag));
+          unsigned long int number_flag = 0;
+          if (number_value_flag)
+            number_flag = atoi(number_value_flag);
+          dfym_search_with_tag(db, argv[optind], number_flag, flags);
         }
       break;
       /* discover command */

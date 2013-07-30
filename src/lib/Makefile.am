@@ -4,6 +4,8 @@ else
   AM_CFLAGS =-I$(top_srcdir)/src/lib -Wall
 endif
 
+AM_CFLAGS += $(GLIB_CFLAGS)
+AM_CFLAGS += $(SQLITE3_CFLAGS)
 
 # The libraries to build
 noinst_LIBRARIES = libdfym-base.a
