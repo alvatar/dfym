@@ -39,9 +39,9 @@ sqlite3 *dfym_open_or_create_database(char *const);
 
 int dfym_add_tag(sqlite3 *, char const *const, char const *const);
 
-int dfym_remove_tag(sqlite3 *, char const *const, char const *const);
+int dfym_untag(sqlite3 *, char const *const, char const *const);
 
-int dfym_show_file_tags(sqlite3 *, char const *const);
+int dfym_show_resource_tags(sqlite3 *, char const *const);
 
 int dfym_all_tags(sqlite3 *);
 
@@ -50,6 +50,14 @@ int dfym_all_tagged(sqlite3 *);
 int dfym_search_with_tag(sqlite3 *, char const *const, unsigned long int, unsigned char);
 
 int dfym_discover_untagged(sqlite3 *, char const *const, unsigned long int, unsigned char);
+
+int dfym_rename_resource(sqlite3 *db, char const *const, char const *const);
+
+int dfym_rename_tag(sqlite3 *db, char const *const, char const *const);
+
+int dfym_delete_resource(sqlite3 *db, char const *const);
+
+int dfym_delete_tag(sqlite3 *db, char const *const);
 
 int dfym_sql_if_row(sqlite3 *, sqlite3_stmt **, char const *const, char const *const, char const *const);
 

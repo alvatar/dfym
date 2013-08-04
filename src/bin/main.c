@@ -57,8 +57,9 @@ int main(int argc, char **argv)
              "                              -nX show only the first X occurences of the query\n"
              "                              -r randomize order of results\n"
              "rename [file] [file]      rename files or directories\n"
-             "rename-tag [tag]          rename a tag\n"
-             "\n"
+             "rename-tag [tag] [tag]    rename a tag\n"
+             "delete [file] [file]      delete files or directories\n"
+             "delete-tag [tag] [tag]    delete a tag\n"
             );
       exit(0);
     }
@@ -120,10 +121,13 @@ int main(int argc, char **argv)
           const char *argument_path = argv[3];
           char path[PATH_MAX];
           if (realpath(argument_path, path))
-            switch (dfym_remove_tag (db, tag, path))
+            switch (dfym_untag (db, tag, path))
               {
               case DFYM_OK:
                 break;
+              case DFYM_NOT_EXISTS:
+                fprintf (stderr, "File not found in the database\n");
+                exit(1);
               default:
                 fprintf (stderr, "Database error\n");
                 exit(1);
@@ -153,11 +157,12 @@ int main(int argc, char **argv)
           const char *argument_path = argv[2];
           char path[PATH_MAX];
           if (realpath(argument_path, path))
-            switch ( dfym_show_file_tags (db, path))
+            switch ( dfym_show_resource_tags (db, path))
               {
               case DFYM_OK:
                 break;
               case DFYM_NOT_EXISTS:
+                fprintf (stderr, "File not found in the database\n");
                 exit(1);
               default:
                 fprintf (stderr, "Database error\n");
@@ -333,12 +338,71 @@ int main(int argc, char **argv)
   /* rename command */
   else if (!strcmp("rename", argv[1]))
     {
-      printf("RENAME\n");
+      if (argc != 4)
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
+      else
+        {
+          const char *path_from_arg = argv[2];
+          const char *path_to_arg = argv[3];
+          char path_to[PATH_MAX];
+          /* Path from doesn't get checked for existence, path_to does */
+          if (realpath(path_to_arg, path_to))
+            switch (dfym_rename_resource (db, path_from_arg, path_to))
+              {
+              case DFYM_OK:
+                break;
+              case DFYM_NOT_EXISTS:
+                fprintf (stderr, "File not found in the database\n");
+                exit(1);
+              default:
+                fprintf (stderr, "Database error\n");
+                exit(1);
+              }
+          else
+            switch (errno)
+              {
+              case ENOENT:
+                fprintf (stderr, "File you are trying to rename to doesn't exist\n");
+                exit(ENOENT);
+              default:
+                fprintf (stderr, "Unknown error\n");
+                exit(1);
+              }
+        }
     }
   /* rename-tag command */
   else if (!strcmp("rename-tag", argv[1]))
     {
-      printf("RENAME-TAG\n");
+      if (argc != 4)
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
+      else
+        switch (dfym_rename_tag (db, argv[2], argv[3]))
+          {
+          case DFYM_OK:
+            break;
+          case DFYM_NOT_EXISTS:
+            fprintf (stderr, "Tag not found in the database\n");
+            exit(1);
+          default:
+            fprintf (stderr, "Database error\n");
+            exit(1);
+          }
+    }
+  /* delete command */
+  else if (!strcmp("delete", argv[1]))
+    {
+      printf("DELETE\n");
+    }
+  /* delete-tag command */
+  else if (!strcmp("delete-tag", argv[1]))
+    {
+      printf("DELETE-TAG\n");
     }
   else
     {
