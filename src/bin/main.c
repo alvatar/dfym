@@ -31,7 +31,7 @@ int main (int argc, char **argv)
   if (argc < 2)
     {
       fprintf (stderr, "Needs a command argument. Please refer to help using: \"dfym help\"\n");
-      exit (EINVAL);
+      exit (EXIT_FAILURE);
     }
   /* help command */
   else if (!strcmp ("help", argv[1]))
@@ -61,7 +61,7 @@ int main (int argc, char **argv)
               "delete [file] [file]      delete files or directories\n"
               "delete-tag [tag] [tag]    delete a tag\n"
              );
-      exit (0);
+      exit (EXIT_SUCCESS);
     }
 
   /* Database preparation */
@@ -79,7 +79,7 @@ int main (int argc, char **argv)
       if (argc != 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         {
@@ -93,17 +93,17 @@ int main (int argc, char **argv)
                 break;
               default:
                 fprintf (stderr, "Database error\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               }
           else
             switch (errno)
               {
               case ENOENT:
                 fprintf (stderr, "File doesn't exist\n");
-                exit (ENOENT);
+                exit (EXIT_FAILURE);
               default:
                 fprintf (stderr, "Unknown error\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               }
         }
     }
@@ -113,7 +113,7 @@ int main (int argc, char **argv)
       if (argc != 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         {
@@ -127,20 +127,20 @@ int main (int argc, char **argv)
                 break;
               case DFYM_NOT_EXISTS:
                 fprintf (stderr, "File not found in the database\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               default:
                 fprintf (stderr, "Database error\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               }
           else
             switch (errno)
               {
               case ENOENT:
                 fprintf (stderr, "File doesn't exist\n");
-                exit (ENOENT);
+                exit (EXIT_FAILURE);
               default:
                 fprintf (stderr, "Unknown error\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               }
         }
     }
@@ -150,7 +150,7 @@ int main (int argc, char **argv)
       if (argc != 3)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         {
@@ -163,20 +163,20 @@ int main (int argc, char **argv)
                 break;
               case DFYM_NOT_EXISTS:
                 fprintf (stderr, "File not found in the database\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               default:
                 fprintf (stderr, "Database error\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               }
           else
             switch (errno)
               {
               case ENOENT:
                 fprintf (stderr, "File doesn't exist\n");
-                exit (ENOENT);
+                exit (EXIT_FAILURE);
               default:
                 fprintf (stderr, "Unknown error\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               }
         }
     }
@@ -186,7 +186,7 @@ int main (int argc, char **argv)
       if (argc != 2)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         switch (dfym_all_tags (db))
@@ -195,7 +195,7 @@ int main (int argc, char **argv)
             break;
           default:
             fprintf (stderr, "Database error\n");
-            exit (1);
+            exit (EXIT_FAILURE);
           }
     }
   /* TAGGED command */
@@ -204,7 +204,7 @@ int main (int argc, char **argv)
       if (argc != 2)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       switch (dfym_all_tagged (db))
         {
@@ -212,7 +212,7 @@ int main (int argc, char **argv)
           break;
         default:
           fprintf (stderr, "Database error\n");
-          exit (1);
+          exit (EXIT_FAILURE);
         }
     }
   /* SEARCH command */
@@ -251,7 +251,7 @@ int main (int argc, char **argv)
                 fprintf (stderr,
                          "Unknown option character `\\x%x'.\n",
                          optopt);
-              exit (EINVAL);
+              exit (EXIT_FAILURE);
               break;
             default:
               abort ();
@@ -261,7 +261,7 @@ int main (int argc, char **argv)
       if ((argc - optind) != 1)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         {
@@ -273,7 +273,7 @@ int main (int argc, char **argv)
               break;
             default:
               fprintf (stderr, "Database error\n");
-              exit (1);
+              exit (EXIT_FAILURE);
             }
         }
     }
@@ -309,7 +309,7 @@ int main (int argc, char **argv)
                 fprintf (stderr,
                          "Unknown option character `\\x%x'.\n",
                          optopt);
-              exit (EINVAL);
+              exit (EXIT_FAILURE);
               break;
             default:
               abort ();
@@ -319,7 +319,7 @@ int main (int argc, char **argv)
       if ((argc - optind) != 1)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         {
@@ -331,7 +331,7 @@ int main (int argc, char **argv)
           else
             {
               fprintf (stderr, "Argument is not a directory\n");
-              exit (ENOENT);
+              exit (EXIT_FAILURE);
             }
         }
     }
@@ -341,7 +341,7 @@ int main (int argc, char **argv)
       if (argc != 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         {
@@ -356,20 +356,20 @@ int main (int argc, char **argv)
                 break;
               case DFYM_NOT_EXISTS:
                 fprintf (stderr, "File not found in the database\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               default:
                 fprintf (stderr, "Database error\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               }
           else
             switch (errno)
               {
               case ENOENT:
                 fprintf (stderr, "File you are trying to rename to doesn't exist\n");
-                exit (ENOENT);
+                exit (EXIT_FAILURE);
               default:
                 fprintf (stderr, "Unknown error\n");
-                exit (1);
+                exit (EXIT_FAILURE);
               }
         }
     }
@@ -379,7 +379,7 @@ int main (int argc, char **argv)
       if (argc != 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         switch (dfym_rename_tag (db, argv[2], argv[3]))
@@ -388,10 +388,10 @@ int main (int argc, char **argv)
             break;
           case DFYM_NOT_EXISTS:
             fprintf (stderr, "Tag not found in the database\n");
-            exit (1);
+            exit (EXIT_FAILURE);
           default:
             fprintf (stderr, "Database error\n");
-            exit (1);
+            exit (EXIT_FAILURE);
           }
     }
   /* delete command */
@@ -400,7 +400,7 @@ int main (int argc, char **argv)
       if (argc != 3)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         switch (dfym_delete_file (db, argv[2]))
@@ -409,10 +409,10 @@ int main (int argc, char **argv)
             break;
           case DFYM_NOT_EXISTS:
             fprintf (stderr, "File not found in the database\n");
-            exit (1);
+            exit (EXIT_FAILURE);
           default:
             fprintf (stderr, "Database error\n");
-            exit (1);
+            exit (EXIT_FAILURE);
           }
     }
   /* delete-tag command */
@@ -421,7 +421,7 @@ int main (int argc, char **argv)
       if (argc != 3)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit (EINVAL);
+          exit (EXIT_FAILURE);
         }
       else
         switch (dfym_delete_tag (db, argv[2]))
@@ -430,18 +430,18 @@ int main (int argc, char **argv)
             break;
           case DFYM_NOT_EXISTS:
             fprintf (stderr, "Tag not found in the database\n");
-            exit (1);
+            exit (EXIT_FAILURE);
           default:
             fprintf (stderr, "Database error\n");
-            exit (1);
+            exit (EXIT_FAILURE);
           }
     }
   else
     {
       printf ("Wrong command. Please try \"dfym help\"\n");
-      exit (EINVAL);
+      exit (EXIT_FAILURE);
     }
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
