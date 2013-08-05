@@ -17,230 +17,230 @@
 /* Global variables */
 gchar *db_path;
 
-void cleanup()
+void cleanup ()
 {
   if (db_path)
-    g_free(db_path);
+    g_free (db_path);
 }
 
-int main(int argc, char **argv)
+int main (int argc, char **argv)
 {
   /* Register cleanup function */
-  atexit(cleanup);
+  atexit (cleanup);
 
   if (argc < 2)
     {
       fprintf (stderr, "Needs a command argument. Please refer to help using: \"dfym help\"\n");
-      exit(EINVAL);
+      exit (EINVAL);
     }
   /* help command */
-  else if (!strcmp("help", argv[1]))
+  else if (!strcmp ("help", argv[1]))
     {
-      printf("Usage: dfym [command] [flags] [arguments...]\n"
-             "\n"
-             "Commands:\n"
-             "tag [tag] [file]          add tag to file or directory\n"
-             "untag [tag] [file]        remove tag from file or directory\n"
-             "show [file]               show the tags of a file directory\n"
-             "tags                      show all defined tags\n"
-             "tagged                    show tagged files\n"
-             "search [tag]              search for files or directories that match this tag\n"
-             "                            flags:\n"
-             "                            -f show only files\n"
-             "                            -d show only directories\n"
-             "                            -nX show only the first X occurences of the query\n"
-             "                            -r randomize order of results\n"
-             "discover [directory]      list untagged files within a given directory\n"
-             "                            flags:\n"
-             "                              -f show only files\n"
-             "                              -d show only directories\n"
-             "                              -nX show only the first X occurences of the query\n"
-             "                              -r randomize order of results\n"
-             "rename [file] [file]      rename files or directories\n"
-             "rename-tag [tag] [tag]    rename a tag\n"
-             "delete [file] [file]      delete files or directories\n"
-             "delete-tag [tag] [tag]    delete a tag\n"
-            );
-      exit(0);
+      printf ("Usage: dfym [command] [flags] [arguments...]\n"
+              "\n"
+              "Commands:\n"
+              "tag [tag] [file]          add tag to file or directory\n"
+              "untag [tag] [file]        remove tag from file or directory\n"
+              "show [file]               show the tags of a file directory\n"
+              "tags                      show all defined tags\n"
+              "tagged                    show tagged files\n"
+              "search [tag]              search for files or directories that match this tag\n"
+              "                            flags:\n"
+              "                            -f show only files\n"
+              "                            -d show only directories\n"
+              "                            -nX show only the first X occurences of the query\n"
+              "                            -r randomize order of results\n"
+              "discover [directory]      list untagged files within a given directory\n"
+              "                            flags:\n"
+              "                              -f show only files\n"
+              "                              -d show only directories\n"
+              "                              -nX show only the first X occurences of the query\n"
+              "                              -r randomize order of results\n"
+              "rename [file] [file]      rename files or directories\n"
+              "rename-tag [tag] [tag]    rename a tag\n"
+              "delete [file] [file]      delete files or directories\n"
+              "delete-tag [tag] [tag]    delete a tag\n"
+             );
+      exit (0);
     }
 
   /* Database preparation */
-  struct passwd *pw = getpwuid(getuid());
+  struct passwd *pw = getpwuid (getuid ());
   char *homedir = pw->pw_dir;
-  db_path = g_strconcat(homedir, "/.dfym.db", NULL);
+  db_path = g_strconcat (homedir, "/.dfym.db", NULL);
 
   sqlite3 *db = NULL;
 
   db = dfym_open_or_create_database (db_path);
 
   /* TAG command */
-  if (!strcmp("tag", argv[1]))
+  if (!strcmp ("tag", argv[1]))
     {
       if (argc != 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         {
           const char *tag = argv[2];
           const char *argument_path = argv[3];
           char path[PATH_MAX];
-          if (realpath(argument_path, path))
+          if (realpath (argument_path, path))
             switch (dfym_add_tag (db, tag, path))
               {
               case DFYM_OK:
                 break;
               default:
                 fprintf (stderr, "Database error\n");
-                exit(1);
+                exit (1);
               }
           else
             switch (errno)
               {
               case ENOENT:
                 fprintf (stderr, "File doesn't exist\n");
-                exit(ENOENT);
+                exit (ENOENT);
               default:
                 fprintf (stderr, "Unknown error\n");
-                exit(1);
+                exit (1);
               }
         }
     }
   /* UNTAG command */
-  else if (!strcmp("untag", argv[1]))
+  else if (!strcmp ("untag", argv[1]))
     {
       if (argc != 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         {
           const char *tag = argv[2];
           const char *argument_path = argv[3];
           char path[PATH_MAX];
-          if (realpath(argument_path, path))
+          if (realpath (argument_path, path))
             switch (dfym_untag (db, tag, path))
               {
               case DFYM_OK:
                 break;
               case DFYM_NOT_EXISTS:
                 fprintf (stderr, "File not found in the database\n");
-                exit(1);
+                exit (1);
               default:
                 fprintf (stderr, "Database error\n");
-                exit(1);
+                exit (1);
               }
           else
             switch (errno)
               {
               case ENOENT:
                 fprintf (stderr, "File doesn't exist\n");
-                exit(ENOENT);
+                exit (ENOENT);
               default:
                 fprintf (stderr, "Unknown error\n");
-                exit(1);
+                exit (1);
               }
         }
     }
   /* SHOW command */
-  else if (!strcmp("show", argv[1]))
+  else if (!strcmp ("show", argv[1]))
     {
       if (argc != 3)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         {
           const char *argument_path = argv[2];
           char path[PATH_MAX];
-          if (realpath(argument_path, path))
+          if (realpath (argument_path, path))
             switch ( dfym_show_file_tags (db, path))
               {
               case DFYM_OK:
                 break;
               case DFYM_NOT_EXISTS:
                 fprintf (stderr, "File not found in the database\n");
-                exit(1);
+                exit (1);
               default:
                 fprintf (stderr, "Database error\n");
-                exit(1);
+                exit (1);
               }
           else
             switch (errno)
               {
               case ENOENT:
                 fprintf (stderr, "File doesn't exist\n");
-                exit(ENOENT);
+                exit (ENOENT);
               default:
                 fprintf (stderr, "Unknown error\n");
-                exit(1);
+                exit (1);
               }
         }
     }
   /* TAGS command */
-  else if (!strcmp("tags", argv[1]))
+  else if (!strcmp ("tags", argv[1]))
     {
       if (argc != 2)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
-        switch (dfym_all_tags(db))
+        switch (dfym_all_tags (db))
           {
           case DFYM_OK:
             break;
           default:
             fprintf (stderr, "Database error\n");
-            exit(1);
+            exit (1);
           }
     }
   /* TAGGED command */
-  else if (!strcmp("tagged", argv[1]))
+  else if (!strcmp ("tagged", argv[1]))
     {
       if (argc != 2)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
-      switch (dfym_all_tagged(db))
+      switch (dfym_all_tagged (db))
         {
         case DFYM_OK:
           break;
         default:
           fprintf (stderr, "Database error\n");
-          exit(1);
+          exit (1);
         }
     }
   /* SEARCH command */
-  else if (!strcmp("search", argv[1]))
+  else if (!strcmp ("search", argv[1]))
     {
       int opt;
       char flags = 0;
       char *number_value_flag = NULL;
       /* Command flags */
-      while ((opt = getopt(argc-1, argv+1, "rn:fd")) != -1)
+      while ((opt = getopt (argc-1, argv+1, "rn:fd")) != -1)
         {
           switch (opt)
             {
             case 'r':
               flags |= OPT_RANDOM;
-              printf("R\n");
+              printf ("R\n");
               break;
             case 'n':
               number_value_flag = optarg;
-              printf("N\n");
+              printf ("N\n");
               break;
             case 'f':
               flags |= OPT_FILES;
-              printf("F\n");
+              printf ("F\n");
               break;
             case 'd':
               flags |= OPT_DIRECTORIES;
-              printf("D\n");
+              printf ("D\n");
               break;
             case '?':
               if (optopt == 'n')
@@ -251,40 +251,40 @@ int main(int argc, char **argv)
                 fprintf (stderr,
                          "Unknown option character `\\x%x'.\n",
                          optopt);
-              exit(EINVAL);
+              exit (EINVAL);
               break;
             default:
-              abort();
+              abort ();
             }
         }
       optind++; /* we are looking into the command, not the executable */
       if ((argc - optind) != 1)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         {
           unsigned long int number_flag = 0;
-          if (number_value_flag) number_flag = atoi(number_value_flag);
-          switch (dfym_search_with_tag(db, argv[optind], number_flag, flags))
+          if (number_value_flag) number_flag = atoi (number_value_flag);
+          switch (dfym_search_with_tag (db, argv[optind], number_flag, flags))
             {
             case DFYM_OK:
               break;
             default:
               fprintf (stderr, "Database error\n");
-              exit(1);
+              exit (1);
             }
         }
     }
   /* DISCOVER command */
-  else if (!strcmp("discover", argv[1]))
+  else if (!strcmp ("discover", argv[1]))
     {
       int opt;
       char flags = 0;
       char *number_value_flag = NULL;
       /* Command flags */
-      while ((opt = getopt(argc-1, argv+1, "rn:fd")) != -1)
+      while ((opt = getopt (argc-1, argv+1, "rn:fd")) != -1)
         {
           switch (opt)
             {
@@ -309,39 +309,39 @@ int main(int argc, char **argv)
                 fprintf (stderr,
                          "Unknown option character `\\x%x'.\n",
                          optopt);
-              exit(EINVAL);
+              exit (EINVAL);
               break;
             default:
-              abort();
+              abort ();
             }
         }
       optind++; /* we are looking into the command, not the executable */
       if ((argc - optind) != 1)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         {
           const char *target_dir = argv[optind];
           unsigned long int number_flag = 0;
-          if (number_value_flag) number_flag = atoi(number_value_flag);
-          if (g_file_test(target_dir, G_FILE_TEST_IS_DIR))
-            dfym_discover_untagged(db, target_dir, number_flag, flags);
+          if (number_value_flag) number_flag = atoi (number_value_flag);
+          if (g_file_test (target_dir, G_FILE_TEST_IS_DIR))
+            dfym_discover_untagged (db, target_dir, number_flag, flags);
           else
             {
               fprintf (stderr, "Argument is not a directory\n");
-              exit(ENOENT);
+              exit (ENOENT);
             }
         }
     }
   /* rename command */
-  else if (!strcmp("rename", argv[1]))
+  else if (!strcmp ("rename", argv[1]))
     {
       if (argc != 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         {
@@ -349,37 +349,37 @@ int main(int argc, char **argv)
           const char *path_to_arg = argv[3];
           char path_to[PATH_MAX];
           /* Path from doesn't get checked for existence, path_to does */
-          if (realpath(path_to_arg, path_to))
+          if (realpath (path_to_arg, path_to))
             switch (dfym_rename_file (db, path_from_arg, path_to))
               {
               case DFYM_OK:
                 break;
               case DFYM_NOT_EXISTS:
                 fprintf (stderr, "File not found in the database\n");
-                exit(1);
+                exit (1);
               default:
                 fprintf (stderr, "Database error\n");
-                exit(1);
+                exit (1);
               }
           else
             switch (errno)
               {
               case ENOENT:
                 fprintf (stderr, "File you are trying to rename to doesn't exist\n");
-                exit(ENOENT);
+                exit (ENOENT);
               default:
                 fprintf (stderr, "Unknown error\n");
-                exit(1);
+                exit (1);
               }
         }
     }
   /* rename-tag command */
-  else if (!strcmp("rename-tag", argv[1]))
+  else if (!strcmp ("rename-tag", argv[1]))
     {
       if (argc != 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         switch (dfym_rename_tag (db, argv[2], argv[3]))
@@ -388,19 +388,19 @@ int main(int argc, char **argv)
             break;
           case DFYM_NOT_EXISTS:
             fprintf (stderr, "Tag not found in the database\n");
-            exit(1);
+            exit (1);
           default:
             fprintf (stderr, "Database error\n");
-            exit(1);
+            exit (1);
           }
     }
   /* delete command */
-  else if (!strcmp("delete", argv[1]))
+  else if (!strcmp ("delete", argv[1]))
     {
       if (argc != 3)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         switch (dfym_delete_file (db, argv[2]))
@@ -409,19 +409,19 @@ int main(int argc, char **argv)
             break;
           case DFYM_NOT_EXISTS:
             fprintf (stderr, "File not found in the database\n");
-            exit(1);
+            exit (1);
           default:
             fprintf (stderr, "Database error\n");
-            exit(1);
+            exit (1);
           }
     }
   /* delete-tag command */
-  else if (!strcmp("delete-tag", argv[1]))
+  else if (!strcmp ("delete-tag", argv[1]))
     {
       if (argc != 3)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
-          exit(EINVAL);
+          exit (EINVAL);
         }
       else
         switch (dfym_delete_tag (db, argv[2]))
@@ -430,16 +430,16 @@ int main(int argc, char **argv)
             break;
           case DFYM_NOT_EXISTS:
             fprintf (stderr, "Tag not found in the database\n");
-            exit(1);
+            exit (1);
           default:
             fprintf (stderr, "Database error\n");
-            exit(1);
+            exit (1);
           }
     }
   else
     {
-      printf("Wrong command. Please try \"dfym help\"\n");
-      exit(EINVAL);
+      printf ("Wrong command. Please try \"dfym help\"\n");
+      exit (EINVAL);
     }
 
   return 0;
