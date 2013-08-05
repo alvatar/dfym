@@ -1,3 +1,6 @@
+/** \file
+  * dfym: Library functions using a SQLite3 backend */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -25,7 +28,7 @@ void shuffle (void **array, size_t n)
     }
 }
 
-/*
+/**
  * Callback for sqlite3_exec that will will print all results
  */
 static int callback_print_sqlite (void *NotUsed, int argc, char **argv, char **azColName)
@@ -38,41 +41,68 @@ static int callback_print_sqlite (void *NotUsed, int argc, char **argv, char **a
   return 0;
 }
 
-/*
- * dfym_open_or_create_database
+/**
+ * \addtogroup database Database query functions
+ */
+/**@{*/
+
+/** Open the database if it exists, create it otherwise.
+ *
+ * The database will be placed in ~/.dfum.db by default. Currently, no means of
+ * changing this default are provided.
+ * \param db The SQLite3 database.
+ * \return Error code \ref dfym_status_t.
  */
 sqlite3 *dfym_open_or_create_database (char *const db_path)
 {
   sqlite3 *db = NULL;
+  char *sql = NULL;
   char *exec_error_msg = NULL;
   CALL_SQLITE (open (db_path, &db));
-  CALL_SQLITE_EXPECT (exec (db, "CREATE TABLE IF NOT EXISTS tags("
-                            "id          INTEGER PRIMARY KEY,"
-                            "name        TEXT UNIQUE NOT NULL"
-                            ")",
-                            NULL, 0, &exec_error_msg), OK);
-  CALL_SQLITE_EXPECT (exec (db, "CREATE TABLE IF NOT EXISTS files("
-                            "id          INTEGER PRIMARY KEY,"
-                            "name        TEXT UNIQUE NOT NULL"
-                            ")",
-                            NULL, 0, &exec_error_msg), OK);
-  CALL_SQLITE_EXPECT (exec (db, "CREATE TABLE IF NOT EXISTS taggings("
-                            "id          INTEGER PRIMARY KEY,"
-                            "tag_id      INTEGER NOT NULL,"
-                            "file_id     INTEGER NOT NULL,"
-                            "CONSTRAINT UniqueTagging UNIQUE(tag_id, file_id),"
-                            "FOREIGN KEY(tag_id) REFERENCES tags(id),"
-                            "FOREIGN KEY(file_id) REFERENCES files(id)"
-                            ")",
-                            NULL, 0, &exec_error_msg), OK);
+  sql =
+    "CREATE TABLE IF NOT EXISTS tags("
+    "id          INTEGER PRIMARY KEY, "
+    "name        TEXT UNIQUE NOT NULL"
+    ")";
+    CALL_SQLITE_EXPECT (exec (db, sql, NULL, 0, &exec_error_msg), OK);
+#ifdef SQL_VERBOSE
+  printf ("** SQL **\n%s\n", sql);
+#endif
+  sql =
+    "CREATE TABLE IF NOT EXISTS files("
+    "id          INTEGER PRIMARY KEY, "
+    "name        TEXT UNIQUE NOT NULL"
+    ")";
+  CALL_SQLITE_EXPECT (exec (db, sql, NULL, 0, &exec_error_msg), OK);
+#ifdef SQL_VERBOSE
+  printf ("** SQL **\n%s\n", sql);
+#endif
+  sql =
+    "CREATE TABLE IF NOT EXISTS taggings("
+    "id          INTEGER PRIMARY KEY, "
+    "tag_id      INTEGER NOT NULL, "
+    "file_id     INTEGER NOT NULL, "
+    "CONSTRAINT UniqueTagging UNIQUE(tag_id, file_id), "
+    "FOREIGN KEY(tag_id) REFERENCES tags(id), "
+    "FOREIGN KEY(file_id) REFERENCES files(id)"
+    ")";
+  CALL_SQLITE_EXPECT (exec (db, sql, NULL, 0, &exec_error_msg), OK);
+#ifdef SQL_VERBOSE
+  printf ("** SQL **\n%s\n", sql);
+#endif
   if (exec_error_msg)
     sqlite3_free (exec_error_msg);
 
   return db;
 }
 
-/*
- * dfym_add_tag
+/** Add a tag to a file.
+ * This will add the file to the database if it didn't exist.
+ *
+ * \param db The SQLite3 database.
+ * \param tag The name of the tag.
+ * \param file The full (normalized) path to the file to tag.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_add_tag (sqlite3 *db,
                   char const *const tag,
@@ -143,8 +173,13 @@ int dfym_add_tag (sqlite3 *db,
   return DFYM_OK;
 }
 
-/*
- * dfym_untag
+/** Remove a tag from a file.
+ * This will remove the file if it is left without any tag.
+ *
+ * \param db The SQLite3 database.
+ * \param tag The name of the tag.
+ * \param file The full (normalized) path to a file to tag.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_untag (sqlite3 *db,
                 char const *const tag,
@@ -152,6 +187,7 @@ int dfym_untag (sqlite3 *db,
 {
   char *sql = NULL;
   sqlite3_stmt *stmt = NULL;
+  char *exec_error_msg = NULL;
 
   /* Check wether the file exists in the database */
   sql = "SELECT id FROM files WHERE files.name = ?";
@@ -176,11 +212,28 @@ int dfym_untag (sqlite3 *db,
   CALL_SQLITE (bind_text (stmt, 2, tag, strlen (tag), 0));
   CALL_SQLITE_EXPECT (step (stmt), DONE);
 
+  /* Delete any file that has no tag at all */
+  sql =
+    "DELETE FROM files "
+    "WHERE files.id "
+    "IN ("
+    "  SELECT files.id "
+    "  FROM files "
+    "  OUTER LEFT JOIN taggings "
+    "  ON (taggings.file_id = files.id) "
+    "  WHERE taggings.id IS NULL)";
+  CALL_SQLITE_EXPECT (exec (db, sql, NULL, 0, &exec_error_msg), OK);
+#ifdef SQL_VERBOSE
+  printf ("** SQL **\n%s\n", sql);
+#endif
+
   return DFYM_OK;
 }
 
-/*
- * dfym_show_file_tags
+/** Print all tags associated to this file.
+ * \param db The SQLite3 database.
+ * \param file The full (normalized) path to a file to tag.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_show_file_tags (sqlite3 *db,
                          char const *const file)
@@ -220,8 +273,9 @@ int dfym_show_file_tags (sqlite3 *db,
   return DFYM_OK;
 }
 
-/*
- * dfym_all_tags
+/** Print all tags in the database.
+ * \param db The SQLite3 database.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_all_tags (sqlite3 *db)
 {
@@ -235,10 +289,12 @@ int dfym_all_tags (sqlite3 *db)
   return DFYM_OK;
 }
 
-/*
- * dfym_all_tagged
+/** Print all files in the database.
+ *
+ * \param db The SQLite3 database.
+ * \return Error code \ref dfym_status_t.
  */
-int dfym_all_tagged (sqlite3 *db)
+int dfym_all_files (sqlite3 *db)
 {
   char *exec_error_msg = NULL;
   char *sql = "SELECT name FROM files";
@@ -250,8 +306,13 @@ int dfym_all_tagged (sqlite3 *db)
   return DFYM_OK;
 }
 
-/*
- * dfym_sql_if_row
+/** Print all files that have been tagged with the given tag.
+ *
+ * \param db The SQLite3 database.
+ * \param tag The name of the tag.
+ * \param number_results Maximum number of files to print.
+ * \param options An OR'ed set of flags from \ref query_flag_t.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_search_with_tag (sqlite3 *db,
                           char const *const tag,
@@ -297,8 +358,12 @@ int dfym_search_with_tag (sqlite3 *db,
   return DFYM_OK;
 }
 
-/*
- * dfym_discover_untagged
+/** Print files found in the given path that haven't been tagged.
+ *
+ * \param db The SQLite3 database.
+ * \param directory The directory to look into.
+ * \param options An OR'ed set of flags from \ref query_flag_t.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_discover_untagged (sqlite3 *db,
                             char const *const directory,
@@ -371,8 +436,12 @@ int dfym_discover_untagged (sqlite3 *db,
   return DFYM_OK;
 }
 
-/*
- * dfym_rename_file
+/** Rename a file in the database.
+ *
+ * \param db The SQLite3 database.
+ * \param file_from The path of the file to rename.
+ * \param file_to The new path of the file.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_rename_file (sqlite3 *db,
                       char const *const file_from,
@@ -405,8 +474,13 @@ int dfym_rename_file (sqlite3 *db,
   return DFYM_OK;
 }
 
-/*
- * dfym_rename_tag
+/** Rename a tag in the database.
+ * Returns DFYM_NOT_EXISTS if the tag is not found in the database.
+ *
+ * \param db The SQLite3 database.
+ * \param tag_from The original name of the tag.
+ * \param tag_to The new name of the tag.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_rename_tag (sqlite3 *db,
                      char const *const tag_from,
@@ -439,8 +513,12 @@ int dfym_rename_tag (sqlite3 *db,
   return DFYM_OK;
 }
 
-/*
- * dfym_delete_file
+/** Remove a file from the database.
+ * Returns DFYM_NOT_EXISTS if the file is not found in the database.
+ *
+ * \param db The SQLite3 database.
+ * \param file The full (normalized) path of the file to remove.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_delete_file (sqlite3 *db,
                       char const *const file)
@@ -482,8 +560,12 @@ int dfym_delete_file (sqlite3 *db,
   return DFYM_OK;
 }
 
-/*
- * dfym_delete_tag
+/** Remove a tag from the database.
+ * This will remove the file if it is left without any tag.
+ *
+ * \param db The SQLite3 database.
+ * \param tag The name of the tag to remove.
+ * \return Error code \ref dfym_status_t.
  */
 int dfym_delete_tag (sqlite3 *db,
                      char const *const tag)
@@ -541,42 +623,5 @@ int dfym_delete_tag (sqlite3 *db,
   return DFYM_OK;
 }
 
-/*
- * dfym_sql_if_row
- */
-int dfym_sql_if_row (sqlite3 *db,
-                     sqlite3_stmt **in_stmt,
-                     char const *const sql_test,
-                     char const *const sql_if_true,
-                     char const *const sql_if_false)
-{
-  sqlite3_stmt *stmt = NULL;
-  int return_step = 0;
-
-  CALL_SQLITE ( prepare_v2 (db, sql_test, strlen (sql_test) + 1, &stmt, NULL) );
-  if ((sqlite3_step (stmt)==SQLITE_ROW))
-    {
-      if (sql_if_true)
-        {
-          CALL_SQLITE ( prepare_v2 (db, sql_if_true, strlen (sql_if_true) + 1, &stmt, NULL) );
-          return_step = sqlite3_step (stmt);
-#ifdef SQL_VERBOSE
-          printf ("** SQL **\n%s\n", sql_if_true);
-#endif
-        }
-    }
-  else
-    {
-      if (sql_if_false)
-        {
-          CALL_SQLITE ( prepare_v2 (db, sql_if_false, strlen (sql_if_false) + 1, &stmt, NULL) );
-          return_step = sqlite3_step (stmt);
-#ifdef SQL_VERBOSE
-          printf ("** SQL **\n%s\n", sql_if_false);
-#endif
-        }
-    }
-  *in_stmt = stmt;
-  return return_step;
-}
+/**@}*/
 

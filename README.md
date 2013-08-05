@@ -8,7 +8,7 @@ Examples:
 ---------
 _Tag a file or directory:_
 
-    dfym tag "classical music" "Dvorak - Symphonies No.1-9 - Rafael KubelIk" 
+    dfym tag "classical music" "Dvorak - Symphonies No.1-9 - Rafael Kubelik" 
 
 _Search for 3 random files or directories tagged with "work":_
 
@@ -46,3 +46,9 @@ rename-tag [tag] [tag]    rename a tag
 delete [file] [file]      delete files or directories
 delete-tag [tag] [tag]    delete a tag
 ```
+
+
+Documentation
+-------------
+
+Use doxygen to generate documentation, by calling _doxygen_ in the root directory.

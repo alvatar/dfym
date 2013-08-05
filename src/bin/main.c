@@ -1,3 +1,6 @@
+/** \file
+  * dfym: Main program. Handles commands, arguments and interaction. */
+
 #include <stdio.h>
 #include <errno.h>
 #include <getopt.h>
@@ -13,6 +16,22 @@
 #include <glib/gstdio.h>
 
 #include "dfym_base.h"
+
+/** \page compilation Compiling the program
+
+Dfym uses Autotools for compilation, following GNU's standards:
+
+\code
+./configure
+make
+make install
+\endcode
+
+If configure fails, try running:
+\code
+autoreconf -iv
+\endcode
+*/
 
 /* Global variables */
 gchar *db_path = NULL;
@@ -208,7 +227,7 @@ int main (int argc, char **argv)
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
           exit (EXIT_FAILURE);
         }
-      switch (dfym_all_tagged (db))
+      switch (dfym_all_files (db))
         {
         case DFYM_OK:
           break;
