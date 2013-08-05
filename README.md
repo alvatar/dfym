@@ -6,19 +6,24 @@ It was born with one purpose: to never forget the music you have. However, it ca
 
 Examples:
 ---------
-Tag a file or directory:
+_Tag a file or directory:_
+
 dfym tag "classical music" "Dvorak - Symphonies No.1-9 - Rafael KubelIk" 
 
-Search for 3 random files or directories tagged with "work":
+_Search for 3 random files or directories tagged with "work":_
+
 dfym search -rn1 work
 
-Search for one random directory that hasn't been tagged in a path:
+_Search for one random directory that hasn't been tagged in a path:_
+
 dfym discover -rdn1 /data/music
 
 
 More options
 ------------
-Commands:
+_Commands:_
+
+`
 tag [tag] [file]          add tag to file or directory
 untag [tag] [file]        remove tag from file or directory
 show [file]               show the tags of a file directory
@@ -40,4 +45,5 @@ rename [file] [file]      rename files or directories
 rename-tag [tag] [tag]    rename a tag
 delete [file] [file]      delete files or directories
 delete-tag [tag] [tag]    delete a tag
+`
 
