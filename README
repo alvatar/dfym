@@ -7,13 +7,13 @@ It was born with one purpose: to never forget the music you have. However, it ca
 Examples:
 =========
 
-Tag a file:
+Tag a file or directory:
 dfym tag "classical music" "Dvorak - Symphonies No.1-9 - Rafael KubelIk" 
 
-Search for 3 random files or directories tagged with "work"
+Search for 3 random files or directories tagged with "work":
 dfym search -rn1 work
 
-Search for one random directory that hasn't been tagged in a path
+Search for one random directory that hasn't been tagged in a path:
 dfym discover -rdn1 /data/music
 
 
