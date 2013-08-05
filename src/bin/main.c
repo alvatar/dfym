@@ -15,12 +15,16 @@
 #include "dfym_base.h"
 
 /* Global variables */
-gchar *db_path;
+gchar *db_path = NULL;
+sqlite3 *db = NULL;
+
 
 void cleanup ()
 {
   if (db_path)
     g_free (db_path);
+  if (db)
+    sqlite3_close (db);
 }
 
 int main (int argc, char **argv)
@@ -68,8 +72,6 @@ int main (int argc, char **argv)
   struct passwd *pw = getpwuid (getuid ());
   char *homedir = pw->pw_dir;
   db_path = g_strconcat (homedir, "/.dfym.db", NULL);
-
-  sqlite3 *db = NULL;
 
   db = dfym_open_or_create_database (db_path);
 
