@@ -23,29 +23,27 @@ More options
 ------------
 _Commands:_
 
-```
-tag [tag] [file]          add tag to file or directory
-untag [tag] [file]        remove tag from file or directory
-show [file]               show the tags of a file directory
-tags                      show all defined tags
-tagged                    show tagged files
-search [tag]              search for files or directories that match this tag
-                            flags:
-                            -f show only files
-                            -d show only directories
-                            -nX show only the first X occurences of the query
-                            -r randomize order of results
-discover [directory]      list untagged files within a given directory
-                            flags:
-                              -f show only files
-                              -d show only directories
-                              -nX show only the first X occurences of the query
-                              -r randomize order of results
-rename [file] [file]      rename files or directories
-rename-tag [tag] [tag]    rename a tag
-delete [file] [file]      delete files or directories
-delete-tag [tag] [tag]    delete a tag
-```
+    tag [tag] [file]          add tag to file or directory
+    untag [tag] [file]        remove tag from file or directory
+    show [file]               show the tags of a file directory
+    tags                      show all defined tags
+    tagged                    show tagged files
+    search [tag]              search for files or directories that match this tag
+                                flags:
+                                  -f show only files
+                                  -d show only directories
+                                  -nX show only the first X occurences of the query
+                                  -r randomize order of results
+    discover [directory]      list untagged files within a given directory
+                                flags:
+                                  -f show only files
+                                  -d show only directories
+                                  -nX show only the first X occurences of the query
+                                  -r randomize order of results
+    rename [file] [file]      rename files or directories
+    rename-tag [tag] [tag]    rename a tag
+    delete [file] [file]      delete files or directories
+    delete-tag [tag] [tag]    delete a tag
 
 
 Documentation
