@@ -5,8 +5,7 @@ DFYM
 It was born with one purpose: to never forget the music you have. However, it can be used for any collection of files, such as movies, pictures or any other kind of file. Using DFYM, you can search for tagged files (for example, "classical music" or "music for working"), discover untagged files in a directory, tag them, and manage your tags.
 
 Examples:
-=========
-
+---------
 Tag a file or directory:
 dfym tag "classical music" "Dvorak - Symphonies No.1-9 - Rafael KubelIk" 
 
@@ -18,8 +17,7 @@ dfym discover -rdn1 /data/music
 
 
 More options
-============
-
+------------
 Commands:
 tag [tag] [file]          add tag to file or directory
 untag [tag] [file]        remove tag from file or directory
