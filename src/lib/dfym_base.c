@@ -182,8 +182,8 @@ int dfym_untag(sqlite3 *db,
 /*
  * dfym_show_file_tags
  */
-int dfym_show_resource_tags(sqlite3 *db,
-                            char const *const file)
+int dfym_show_file_tags(sqlite3 *db,
+                        char const *const file)
 {
   char *sql = NULL;
   sqlite3_stmt *stmt = NULL;
@@ -372,11 +372,11 @@ int dfym_discover_untagged(sqlite3 *db,
 }
 
 /*
- * dfym_rename_resource
+ * dfym_rename_file
  */
-int dfym_rename_resource(sqlite3 *db,
-                         char const *const file_from,
-                         char const *const file_to)
+int dfym_rename_file(sqlite3 *db,
+                     char const *const file_from,
+                     char const *const file_to)
 {
   char *sql = NULL;
   sqlite3_stmt *stmt = NULL;
@@ -406,7 +406,7 @@ int dfym_rename_resource(sqlite3 *db,
 }
 
 /*
- * dfym_rename_resource
+ * dfym_rename_tag
  */
 int dfym_rename_tag(sqlite3 *db,
                     char const *const tag_from,
@@ -440,53 +440,103 @@ int dfym_rename_tag(sqlite3 *db,
 }
 
 /*
- * dfym_rename_resource
+ * dfym_delete_file
  */
-int dfym_delete_resource(sqlite3 *db,
-                         char const *const file)
+int dfym_delete_file(sqlite3 *db,
+                     char const *const file)
 {
   char *sql = NULL;
   sqlite3_stmt *stmt = NULL;
 
-  /* Insert tagging relation if doesn't exist */
-  /* sql =
-    "DELETE "
-    "FROM taggings "
-    "WHERE file_id IN (SELECT files.id FROM files WHERE files.name = ?1) "
-    "AND tag_id IN (SELECT tags.id FROM tags WHERE tags.name = ?2)";
-  #ifdef SQL_VERBOSE
+  /* Check if file exists in the database */
+  sql = "SELECT id FROM files WHERE name = ?";
+#ifdef SQL_VERBOSE
   printf("** SQL **\n%s\n", sql);
-  #endif
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
   CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
-  CALL_SQLITE (bind_text (stmt, 2, tag, strlen (tag), 0));
-  CALL_SQLITE_EXPECT (step(stmt), DONE); */
+  if (sqlite3_step(stmt) == SQLITE_DONE)
+    return DFYM_NOT_EXISTS;
+
+  /* Delete any tagging including this file */
+  sql =
+    "DELETE "
+    "FROM taggings "
+    "WHERE file_id IN (SELECT files.id FROM files WHERE files.name = ?1) ";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
+
+  /* Delete file */
+  sql = "DELETE FROM files WHERE name = ?1";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
 
   return DFYM_OK;
 }
 
 /*
- * dfym_rename_resource
+ * dfym_delete_tag
  */
 int dfym_delete_tag(sqlite3 *db,
                     char const *const tag)
 {
   char *sql = NULL;
   sqlite3_stmt *stmt = NULL;
+  char *exec_error_msg = NULL;
 
-  /* Insert tagging relation if doesn't exist */
-  /* sql =
+  /* Check if tag exists in the database */
+  sql = "SELECT id FROM tags WHERE name = ?";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, tag, strlen (tag), 0));
+  if (sqlite3_step(stmt) == SQLITE_DONE)
+    return DFYM_NOT_EXISTS;
+
+  /* Delete any tagging including this tag */
+  sql =
     "DELETE "
     "FROM taggings "
-    "WHERE file_id IN (SELECT files.id FROM files WHERE files.name = ?1) "
-    "AND tag_id IN (SELECT tags.id FROM tags WHERE tags.name = ?2)";
-  #ifdef SQL_VERBOSE
+    "WHERE tag_id IN (SELECT tags.id FROM tags WHERE tags.name = ?1) ";
+#ifdef SQL_VERBOSE
   printf("** SQL **\n%s\n", sql);
-  #endif
+#endif
   CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
-  CALL_SQLITE (bind_text (stmt, 1, file, strlen (file), 0));
-  CALL_SQLITE (bind_text (stmt, 2, tag, strlen (tag), 0));
-  CALL_SQLITE_EXPECT (step(stmt), DONE); */
+  CALL_SQLITE (bind_text (stmt, 1, tag, strlen (tag), 0));
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
+
+  /* Delete any file that has no tag at all */
+  sql = 
+    "DELETE FROM files "
+    "WHERE files.id "
+    "IN ("
+    "  SELECT files.id "
+    "  FROM files "
+    "  OUTER LEFT JOIN taggings "
+    "  ON (taggings.file_id = files.id) "
+    "  WHERE taggings.id IS NULL)";
+  CALL_SQLITE_EXPECT (exec (db, sql, NULL, 0, &exec_error_msg), OK);
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+
+  /* Delete tag */
+  sql = "DELETE FROM tags WHERE name = ?1";
+#ifdef SQL_VERBOSE
+  printf("** SQL **\n%s\n", sql);
+#endif
+  CALL_SQLITE (prepare_v2(db, sql, strlen (sql) + 1, &stmt, NULL));
+  CALL_SQLITE (bind_text (stmt, 1, tag, strlen (tag), 0));
+  CALL_SQLITE_EXPECT (step(stmt), DONE);
 
   return DFYM_OK;
 }

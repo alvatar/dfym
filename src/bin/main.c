@@ -43,14 +43,14 @@ int main(int argc, char **argv)
              "untag [tag] [file]        remove tag from file or directory\n"
              "show [file]               show the tags of a file directory\n"
              "tags                      show all defined tags\n"
-             "tagged                    show tagged resources\n"
+             "tagged                    show tagged files\n"
              "search [tag]              search for files or directories that match this tag\n"
              "                            flags:\n"
              "                            -f show only files\n"
              "                            -d show only directories\n"
              "                            -nX show only the first X occurences of the query\n"
              "                            -r randomize order of results\n"
-             "discover [directory]      list untagged resources within a given directory\n"
+             "discover [directory]      list untagged files within a given directory\n"
              "                            flags:\n"
              "                              -f show only files\n"
              "                              -d show only directories\n"
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
           const char *argument_path = argv[2];
           char path[PATH_MAX];
           if (realpath(argument_path, path))
-            switch ( dfym_show_resource_tags (db, path))
+            switch ( dfym_show_file_tags (db, path))
               {
               case DFYM_OK:
                 break;
@@ -350,7 +350,7 @@ int main(int argc, char **argv)
           char path_to[PATH_MAX];
           /* Path from doesn't get checked for existence, path_to does */
           if (realpath(path_to_arg, path_to))
-            switch (dfym_rename_resource (db, path_from_arg, path_to))
+            switch (dfym_rename_file (db, path_from_arg, path_to))
               {
               case DFYM_OK:
                 break;
@@ -397,12 +397,44 @@ int main(int argc, char **argv)
   /* delete command */
   else if (!strcmp("delete", argv[1]))
     {
-      printf("DELETE\n");
+      if (argc != 3)
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
+      else
+        switch (dfym_delete_file (db, argv[2]))
+          {
+          case DFYM_OK:
+            break;
+          case DFYM_NOT_EXISTS:
+            fprintf (stderr, "File not found in the database\n");
+            exit(1);
+          default:
+            fprintf (stderr, "Database error\n");
+            exit(1);
+          }
     }
   /* delete-tag command */
   else if (!strcmp("delete-tag", argv[1]))
     {
-      printf("DELETE-TAG\n");
+      if (argc != 3)
+        {
+          fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
+          exit(EINVAL);
+        }
+      else
+        switch (dfym_delete_tag (db, argv[2]))
+          {
+          case DFYM_OK:
+            break;
+          case DFYM_NOT_EXISTS:
+            fprintf (stderr, "Tag not found in the database\n");
+            exit(1);
+          default:
+            fprintf (stderr, "Database error\n");
+            exit(1);
+          }
     }
   else
     {
