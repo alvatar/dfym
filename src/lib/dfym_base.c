@@ -12,18 +12,19 @@
 
 #include "dfym_base.h"
 
-void shuffle (void **array, size_t n)
+void g_array_shuffle (GPtrArray *array)
 {
   srand (time (NULL));
+  int n = array->len;
   if (n > 1)
     {
       size_t i;
       for (i = 0; i < n - 1; i++)
         {
           size_t j = i + rand () / (RAND_MAX / (n - i) + 1);
-          void *t = array[j];
-          array[j] = array[i];
-          array[i] = t;
+          gpointer t = array->pdata[j];
+          array->pdata[j] = array->pdata[i];
+          array->pdata[i] = t;
         }
     }
 }
@@ -64,7 +65,7 @@ sqlite3 *dfym_open_or_create_database (char *const db_path)
     "id          INTEGER PRIMARY KEY, "
     "name        TEXT UNIQUE NOT NULL"
     ")";
-    CALL_SQLITE_EXPECT (exec (db, sql, NULL, 0, &exec_error_msg), OK);
+  CALL_SQLITE_EXPECT (exec (db, sql, NULL, 0, &exec_error_msg), OK);
 #ifdef SQL_VERBOSE
   printf ("** SQL **\n%s\n", sql);
 #endif
@@ -377,7 +378,7 @@ int dfym_discover_untagged (sqlite3 *db,
   sqlite3_stmt *stmt = NULL;
   int step;
   int limit = 0;
-  char path[PATH_MAX];
+  char *path;
 
   sql = "SELECT name FROM files WHERE files.name = ?";
 #ifdef SQL_VERBOSE
@@ -391,14 +392,14 @@ int dfym_discover_untagged (sqlite3 *db,
       GPtrArray *dir_contents = g_ptr_array_new ();
       while ((filename = g_dir_read_name (dir)))
         {
-          g_ptr_array_add (dir_contents, (gpointer)filename);
+          g_ptr_array_add (dir_contents, (gpointer)g_build_filename (directory, filename, NULL));
         }
-      shuffle (dir_contents->pdata, dir_contents->len);
+      g_array_shuffle (dir_contents);
 
       for (int i=0; i<dir_contents->len && limit<number_results; i++)
         {
           CALL_SQLITE (prepare_v2 (db, sql, strlen (sql) + 1, &stmt, NULL));
-          realpath (dir_contents->pdata[i], path);
+          path = (char *)g_ptr_array_index (dir_contents, i);
           CALL_SQLITE (bind_text (stmt, 1, path, strlen (path), 0));
           step = sqlite3_step (stmt);
           if (step == SQLITE_DONE
@@ -419,7 +420,7 @@ int dfym_discover_untagged (sqlite3 *db,
              && (!number_results || limit < number_results))
         {
           CALL_SQLITE (prepare_v2 (db, sql, strlen (sql) + 1, &stmt, NULL));
-          realpath (filename, path);
+          path = g_build_filename (directory, filename, NULL);
           CALL_SQLITE (bind_text (stmt, 1, path, strlen (path), 0));
           step = sqlite3_step (stmt);
           if (step == SQLITE_DONE
