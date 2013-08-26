@@ -249,19 +249,15 @@ int main (int argc, char **argv)
             {
             case 'r':
               flags |= OPT_RANDOM;
-              printf ("R\n");
               break;
             case 'n':
               number_value_flag = optarg;
-              printf ("N\n");
               break;
             case 'f':
               flags |= OPT_FILES;
-              printf ("F\n");
               break;
             case 'd':
               flags |= OPT_DIRECTORIES;
-              printf ("D\n");
               break;
             case '?':
               if (optopt == 'n')
