@@ -18,6 +18,10 @@ _Search for one random directory that hasn't been tagged in a path:_
 
     dfym discover -rdn1 /data/music
 
+_Example usage with mplayer in Linux command line_:
+
+    mplayer "`dfym discover -rn1 /mnt/usb/music/`"/*
+
 
 More options
 ------------
