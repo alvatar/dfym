@@ -50,7 +50,7 @@ AM_COND_IF(DEBUG,
     AC_DEFINE(DEBUG, 0, [Define to 1 or higher if this is a debug build]))
 
 # Checks for library functions.
-AC_CHECK_FUNCS([asprintf strdup])
+AC_CHECK_FUNCS([strdup])
 
 AC_CONFIG_FILES([Makefile
                  src/lib/Makefile

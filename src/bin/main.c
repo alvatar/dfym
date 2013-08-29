@@ -455,7 +455,7 @@ int main (int argc, char **argv)
     }
   else
     {
-      printf ("Wrong command. Please try \"dfym help\"\n");
+      fprintf (stderr, "Wrong command. Please try \"dfym help\"\n");
       exit (EXIT_FAILURE);
     }
 
