@@ -240,7 +240,7 @@ int main (int argc, char **argv)
   else if (!strcmp ("search", argv[1]))
     {
       int opt;
-      char flags = 0;
+      unsigned char flags = 0;
       char *number_value_flag = NULL;
       /* Command flags */
       while ((opt = getopt (argc-1, argv+1, "rn:fd")) != -1)
@@ -298,7 +298,7 @@ int main (int argc, char **argv)
   else if (!strcmp ("discover", argv[1]))
     {
       int opt;
-      char flags = 0;
+      unsigned char flags = 0;
       char *number_value_flag = NULL;
       /* Command flags */
       while ((opt = getopt (argc-1, argv+1, "rn:fd")) != -1)
