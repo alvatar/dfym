@@ -62,8 +62,8 @@ int main (int argc, char **argv)
       printf ("Usage: dfym [command] [flags] [arguments...]\n"
               "\n"
               "Commands:\n"
-              "tag [tag] [file]          add tag to file or directory\n"
-              "untag [tag] [file]        remove tag from file or directory\n"
+              "tag [tags...] [file]          add tag to file or directory\n"
+              "untag [tags...] [file]        remove tag from file or directory\n"
               "show [file]               show the tags of a file directory\n"
               "tags                      show all defined tags\n"
               "tagged                    show tagged files\n"
@@ -97,72 +97,80 @@ int main (int argc, char **argv)
   /* TAG command */
   if (!strcmp ("tag", argv[1]))
     {
-      if (argc != 4)
+      if (argc < 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
           exit (EXIT_FAILURE);
         }
       else
         {
-          const char *tag = argv[2];
-          const char *argument_path = argv[3];
-          char path[PATH_MAX];
-          if (realpath (argument_path, path))
-            switch (dfym_add_tag (db, tag, path))
-              {
-              case DFYM_OK:
-                break;
-              default:
-                fprintf (stderr, "Database error\n");
-                exit (EXIT_FAILURE);
-              }
-          else
-            switch (errno)
-              {
-              case ENOENT:
-                fprintf (stderr, "File doesn't exist\n");
-                exit (EXIT_FAILURE);
-              default:
-                fprintf (stderr, "Unknown error\n");
-                exit (EXIT_FAILURE);
-              }
+          int i;
+          for (i=0; i< (argc-3); i++)
+            {
+              const char *tag = argv[2+i];
+              const char *argument_path = argv[argc-1];
+              char path[PATH_MAX];
+              if (realpath (argument_path, path))
+                switch (dfym_add_tag (db, tag, path))
+                  {
+                  case DFYM_OK:
+                    break;
+                  default:
+                    fprintf (stderr, "Database error\n");
+                    exit (EXIT_FAILURE);
+                  }
+              else
+                switch (errno)
+                  {
+                  case ENOENT:
+                    fprintf (stderr, "File doesn't exist\n");
+                    exit (EXIT_FAILURE);
+                  default:
+                    fprintf (stderr, "Unknown error\n");
+                    exit (EXIT_FAILURE);
+                  }
+            }
         }
     }
   /* UNTAG command */
   else if (!strcmp ("untag", argv[1]))
     {
-      if (argc != 4)
+      if (argc < 4)
         {
           fprintf (stderr, "Wrong number of arguments. Please refer to help using: \"dfym help\"\n");
           exit (EXIT_FAILURE);
         }
       else
         {
-          const char *tag = argv[2];
-          const char *argument_path = argv[3];
-          char path[PATH_MAX];
-          if (realpath (argument_path, path))
-            switch (dfym_untag (db, tag, path))
-              {
-              case DFYM_OK:
-                break;
-              case DFYM_NOT_EXISTS:
-                fprintf (stderr, "File not found in the database\n");
-                exit (EXIT_FAILURE);
-              default:
-                fprintf (stderr, "Database error\n");
-                exit (EXIT_FAILURE);
-              }
-          else
-            switch (errno)
-              {
-              case ENOENT:
-                fprintf (stderr, "File doesn't exist\n");
-                exit (EXIT_FAILURE);
-              default:
-                fprintf (stderr, "Unknown error\n");
-                exit (EXIT_FAILURE);
-              }
+          int i;
+          for (i=0; i< (argc-3); i++)
+            {
+              const char *tag = argv[2+i];
+              const char *argument_path = argv[argc-1];
+              char path[PATH_MAX];
+              if (realpath (argument_path, path))
+                switch (dfym_untag (db, tag, path))
+                  {
+                  case DFYM_OK:
+                    break;
+                  case DFYM_NOT_EXISTS:
+                    fprintf (stderr, "File not found in the database\n");
+                    exit (EXIT_FAILURE);
+                  default:
+                    fprintf (stderr, "Database error\n");
+                    exit (EXIT_FAILURE);
+                  }
+              else
+                switch (errno)
+                  {
+                  case ENOENT:
+                    fprintf (stderr, "File doesn't exist\n");
+                    exit (EXIT_FAILURE);
+                  default:
+                    fprintf (stderr, "Unknown error\n");
+                    exit (EXIT_FAILURE);
+                  }
+            }
         }
     }
   /* SHOW command */
