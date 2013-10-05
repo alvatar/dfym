@@ -428,17 +428,27 @@ int main (int argc, char **argv)
           exit (EXIT_FAILURE);
         }
       else
-        switch (dfym_delete_file (db, argv[2]))
-          {
-          case DFYM_OK:
-            break;
-          case DFYM_NOT_EXISTS:
-            fprintf (stderr, "File not found in the database\n");
-            exit (EXIT_FAILURE);
-          default:
-            fprintf (stderr, "Database error\n");
-            exit (EXIT_FAILURE);
-          }
+        {
+          const char *argument_path = argv[2];
+          char try_full_path[PATH_MAX];
+          char *path;
+          if (realpath (argument_path, try_full_path))
+            path = try_full_path;
+          else
+            path = (char*)argument_path;
+
+          switch (dfym_delete_file (db, path))
+            {
+            case DFYM_OK:
+              break;
+            case DFYM_NOT_EXISTS:
+              fprintf (stderr, "File not found in the database\n");
+              exit (EXIT_FAILURE);
+            default:
+              fprintf (stderr, "Database error\n");
+              exit (EXIT_FAILURE);
+            }
+        }
     }
   /* delete-tag command */
   else if (!strcmp ("delete-tag", argv[1]))
