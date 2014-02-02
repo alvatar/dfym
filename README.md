@@ -54,3 +54,7 @@ Documentation
 -------------
 
 Use doxygen to generate documentation, by calling _doxygen_ in the root directory.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/alvatar/dfym/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
