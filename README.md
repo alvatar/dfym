@@ -4,6 +4,19 @@ DFYM
 
 It was born with one purpose: to never forget the music you have. However, it can be used for any collection of files, such as movies, pictures or any other kind of file. Using DFYM, you can search for tagged files (for example, "classical music" or "music for working"), discover untagged files in a directory, tag them, and manage your tags.
 
+
+Install
+-------
+
+You need autotools (autoconf automake libtool), a C compiler and sqlite3
+
+    autoreconf --install
+    # Choose installation folder (it will append /bin)
+    ./configure --prefix=$USER/.local
+    # Compile and install
+    make install
+
+
 Examples:
 ---------
 _Tag a file or directory:_
@@ -54,7 +67,4 @@ Documentation
 -------------
 
 Use doxygen to generate documentation, by calling _doxygen_ in the root directory.
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/alvatar/dfym/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
